@@ -179,7 +179,7 @@ export function drawEyeCheckScreen(ctx, status, progressRatio) {
   drawRoundRect(ctx, barX, barY, barWidth * clampedProgress, barHeight, 10);
   ctx.fill();
 
-  const skipX = WIDTH / 2 - 75;
+  const skipX = WIDTH - 170;
   const skipY = HEIGHT - 60;
   const skipW = 150;
   const skipH = 40;
