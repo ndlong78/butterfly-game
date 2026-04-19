@@ -1,1 +1,59 @@
-// placeholder
+import { VOICE_TEXTS } from './config.js';
+
+let _selectedVoice = null;
+
+function pickVoice(voices) {
+  if (!voices || voices.length === 0) {
+    return null;
+  }
+
+  const lowerNameIncludes = (voice, keywords) => {
+    const name = (voice.name || '').toLowerCase();
+    return keywords.some((keyword) => name.includes(keyword));
+  };
+
+  return (
+    voices.find((voice) => voice.lang === 'vi-VN') ||
+    voices.find((voice) => (voice.lang || '').toLowerCase().startsWith('vi')) ||
+    voices.find((voice) => lowerNameIncludes(voice, ['female', 'woman', 'nữ'])) ||
+    voices[0]
+  );
+}
+
+export function initVoice() {
+  const voices = window.speechSynthesis.getVoices();
+
+  if (voices.length > 0) {
+    _selectedVoice = pickVoice(voices);
+  } else {
+    window.speechSynthesis.onvoiceschanged = () => {
+      _selectedVoice = pickVoice(window.speechSynthesis.getVoices());
+    };
+  }
+}
+
+export function speak(textKey) {
+  const text = VOICE_TEXTS[textKey];
+  if (!text) {
+    return Promise.resolve();
+  }
+
+  return speakRaw(text);
+}
+
+export function speakRaw(text) {
+  window.speechSynthesis.cancel();
+
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.voice = _selectedVoice;
+  utt.rate = 0.85;
+  utt.pitch = 1.1;
+  utt.volume = 1.0;
+  utt.lang = 'vi-VN';
+
+  return new Promise((resolve, reject) => {
+    utt.onend = resolve;
+    utt.onerror = reject;
+    window.speechSynthesis.speak(utt);
+  });
+}
