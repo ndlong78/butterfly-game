@@ -78,6 +78,10 @@ export function initInput(canvas) {
     _updateFromEvent(e);
   };
 
+  const releaseHandler = (e) => {
+    _updateFromEvent(e);
+  };
+
   canvas.addEventListener('mousemove', handler);
   canvas.addEventListener('mousedown', handler);
   canvas.addEventListener('mouseup', handler);
@@ -85,6 +89,11 @@ export function initInput(canvas) {
   canvas.addEventListener('touchstart', handler, { passive: false });
   canvas.addEventListener('touchmove', handler, { passive: false });
   canvas.addEventListener('touchend', handler, { passive: false });
+  canvas.addEventListener('touchcancel', handler, { passive: false });
+
+  window.addEventListener('mouseup', releaseHandler);
+  window.addEventListener('touchend', releaseHandler, { passive: true });
+  window.addEventListener('touchcancel', releaseHandler, { passive: true });
 }
 
 export function getPointer() {
