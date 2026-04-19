@@ -113,17 +113,17 @@ export function drawMenuScreen(ctx, frameCount) {
   ctx.font = 'bold 28px Arial';
   ctx.fillText('BẮT ĐẦU CHƠI', startX + startW / 2, startY + startH / 2);
 
-  const reportX = CANVAS.WIDTH - 180;
-  const reportY = CANVAS.HEIGHT - 70;
-  const reportW = 160;
-  const reportH = 45;
+  const reportW = 220;
+  const reportH = 52;
+  const reportX = CANVAS.WIDTH / 2 - reportW / 2;
+  const reportY = CANVAS.HEIGHT - 90;
 
   ctx.fillStyle = '#95A5A6';
   drawRoundRect(ctx, reportX, reportY, reportW, reportH, 18);
   ctx.fill();
 
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = '20px Arial';
+  ctx.font = 'bold 24px Arial';
   ctx.fillText('Xem Báo Cáo', reportX + reportW / 2, reportY + reportH / 2);
   ctx.textBaseline = 'alphabetic';
 
