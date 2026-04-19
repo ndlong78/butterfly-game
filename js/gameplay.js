@@ -15,26 +15,6 @@ let _sampleTimer = 0;
 let _trackSamples = 0;
 let _trackHits = 0;
 
-function _drawRoundRect(ctx, x, y, w, h, radius) {
-  const r = Math.min(radius, w / 2, h / 2);
-  if (typeof ctx.roundRect === 'function') {
-    ctx.beginPath();
-    ctx.roundRect(x, y, w, h, r);
-    return;
-  }
-
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-}
-
 function _distance(x1, y1, x2, y2) {
   const dx = x2 - x1;
   const dy = y2 - y1;
@@ -139,24 +119,20 @@ export function drawGameplay(ctx) {
   const remainMs = Math.max(0, MAX_LEVEL_TIME_MS - elapsed);
 
   ctx.save();
-  ctx.fillStyle = 'rgba(255,255,255,0.9)';
-  _drawRoundRect(ctx, CANVAS.WIDTH / 2 - 320, 12, 640, 58, 28);
-  ctx.fill();
-
-  ctx.fillStyle = '#2C3E50';
-  ctx.shadowColor = 'rgba(255,255,255,0.5)';
-  ctx.shadowBlur = 4;
-  ctx.font = 'bold 32px Arial';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.shadowColor = 'rgba(0,0,0,0.4)';
+  ctx.shadowBlur = 6;
+  ctx.font = '28px Arial';
 
   const remaining = _butterflies.length - _score;
   ctx.textAlign = 'left';
-  ctx.fillText(`⭐ ${_score}`, CANVAS.WIDTH / 2 - 280, 52);
+  ctx.fillText(`⭐ ${_score}`, 20, 40);
 
   ctx.textAlign = 'center';
-  ctx.fillText(`🦋 ${remaining}`, CANVAS.WIDTH / 2, 52);
+  ctx.fillText(`🦋 ${remaining}`, 640, 40);
 
   ctx.textAlign = 'right';
-  ctx.fillText(`⏱ ${Math.ceil(remainMs / 1000)}s`, CANVAS.WIDTH / 2 + 280, 52);
+  ctx.fillText(`⏱ ${Math.ceil(remainMs / 1000)}s`, 1260, 40);
   ctx.restore();
 
   const ptr = getPointer();
