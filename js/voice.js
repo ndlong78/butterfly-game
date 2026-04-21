@@ -1,6 +1,7 @@
 import { VOICE_TEXTS } from './config.js';
 
 let _selectedVoice = null;
+let _onVoicesChanged = null;
 
 function pickVoice(voices) {
   if (!voices || voices.length === 0) {
@@ -25,11 +26,22 @@ export function initVoice() {
 
   if (voices.length > 0) {
     _selectedVoice = pickVoice(voices);
+    window.speechSynthesis.onvoiceschanged = null;
+    _onVoicesChanged = null;
   } else {
-    window.speechSynthesis.onvoiceschanged = () => {
+    _onVoicesChanged = () => {
       _selectedVoice = pickVoice(window.speechSynthesis.getVoices());
     };
+    window.speechSynthesis.onvoiceschanged = _onVoicesChanged;
   }
+}
+
+export function destroyVoice() {
+  window.speechSynthesis.cancel();
+  if (window.speechSynthesis.onvoiceschanged === _onVoicesChanged) {
+    window.speechSynthesis.onvoiceschanged = null;
+  }
+  _onVoicesChanged = null;
 }
 
 export function speak(textKey) {

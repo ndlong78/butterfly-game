@@ -1,54 +1,105 @@
 import { CANVAS, GAME, VOICE_TEXTS } from './config.js';
+import { drawRoundRect } from './canvas-utils.js';
 
 let _video = null;
 let _offscreen = null;
 let _offCtx = null;
 let _stream = null;
 let _skipBounds = null;
+let _cameraRequestId = 0;
+let _lastCameraError = null;
 
-function drawRoundRect(ctx, x, y, w, h, radius) {
-  const r = Math.min(radius, w / 2, h / 2);
-  if (typeof ctx.roundRect === 'function') {
-    ctx.beginPath();
-    ctx.roundRect(x, y, w, h, r);
-    return;
+function createProcessCanvas(width, height) {
+  if (typeof OffscreenCanvas !== 'undefined') {
+    return new OffscreenCanvas(width, height);
   }
 
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
+  const fallback = document.createElement('canvas');
+  fallback.width = width;
+  fallback.height = height;
+  return fallback;
 }
 
 export async function startCamera() {
-  _stream = await navigator.mediaDevices.getUserMedia({
-    video: {
-      facingMode: 'user',
-      width: 320,
-      height: 240,
-    },
-  });
+  const requestId = _cameraRequestId + 1;
+  _cameraRequestId = requestId;
+  _lastCameraError = null;
 
-  _video = document.createElement('video');
-  _video.autoplay = true;
-  _video.muted = true;
-  _video.playsInline = true;
-  _video.srcObject = _stream;
-  _video.style.display = 'none';
-  document.body.appendChild(_video);
-  await _video.play();
+  if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+    _lastCameraError = 'unsupported_media_devices';
+    throw new Error('Thiết bị không hỗ trợ camera');
+  }
 
-  _offscreen = new OffscreenCanvas(320, 240);
-  _offCtx = _offscreen.getContext('2d');
+  let stream = null;
+  let video = null;
+
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: 'user',
+        width: 320,
+        height: 240,
+      },
+    });
+
+    if (requestId !== _cameraRequestId) {
+      stream.getTracks().forEach((track) => track.stop());
+      throw new Error('Camera request đã hết hạn');
+    }
+
+    video = document.createElement('video');
+    video.autoplay = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.srcObject = stream;
+    video.style.display = 'none';
+    document.body.appendChild(video);
+
+    await video.play();
+
+    if (requestId !== _cameraRequestId) {
+      stream.getTracks().forEach((track) => track.stop());
+      video.remove();
+      throw new Error('Camera request đã hết hạn sau khi play');
+    }
+
+    const offscreen = createProcessCanvas(320, 240);
+    const offCtx = offscreen.getContext('2d');
+    if (!offCtx) {
+      throw new Error('Không thể tạo context xử lý camera');
+    }
+
+    _stream = stream;
+    _video = video;
+    _offscreen = offscreen;
+    _offCtx = offCtx;
+  } catch (error) {
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+    }
+
+    if (video) {
+      video.remove();
+    }
+
+    _stream = null;
+    _video = null;
+    _offscreen = null;
+    _offCtx = null;
+
+    if (error && error.name === 'NotAllowedError') {
+      _lastCameraError = 'permission_denied';
+    } else if (!_lastCameraError) {
+      _lastCameraError = 'camera_error';
+    }
+
+    throw error;
+  }
 }
 
 export function stopCamera() {
+  _cameraRequestId += 1;
+
   if (_stream) {
     _stream.getTracks().forEach((track) => track.stop());
   }
@@ -61,6 +112,10 @@ export function stopCamera() {
   _stream = null;
   _offscreen = null;
   _offCtx = null;
+}
+
+export function getCameraErrorCode() {
+  return _lastCameraError;
 }
 
 export function analyzeFrame() {
@@ -158,6 +213,9 @@ export function drawEyeCheckScreen(ctx, status, progressRatio) {
   } else if (status === 'uncovered') {
     message = VOICE_TEXTS.EYE_NOT_COVERED;
     messageColor = '#E74C3C';
+  } else if (status === 'camera_error') {
+    message = 'Camera chưa sẵn sàng, trò chơi sẽ tiếp tục.';
+    messageColor = '#E67E22';
   }
 
   ctx.fillStyle = messageColor;

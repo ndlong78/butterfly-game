@@ -1,30 +1,11 @@
 import { CANVAS, GAME } from './config.js';
+import { drawRoundRect } from './canvas-utils.js';
 
 const STORAGE_KEY = 'butterflygame_sessions';
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 let _pdfBtnBounds = { x: 0, y: 0, w: 0, h: 0 };
 let _menuBtnBounds = { x: 0, y: 0, w: 0, h: 0 };
-
-function drawRoundRect(ctx, x, y, w, h, radius) {
-  const r = Math.min(radius, w / 2, h / 2);
-  if (typeof ctx.roundRect === 'function') {
-    ctx.beginPath();
-    ctx.roundRect(x, y, w, h, r);
-    return;
-  }
-
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-}
 
 function hit(bounds, x, y) {
   return x >= bounds.x && x <= bounds.x + bounds.w && y >= bounds.y && y <= bounds.y + bounds.h;
@@ -204,8 +185,18 @@ export function drawReportScreen(ctx, childName = '') {
 }
 
 export function exportPDF(childName, childAge) {
+  if (!window.jspdf || typeof window.jspdf.jsPDF !== 'function') {
+    alert('Thư viện PDF chưa sẵn sàng. Vui lòng thử lại sau vài giây.');
+    return false;
+  }
+
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF('p', 'mm', 'a4');
+  if (typeof doc.autoTable !== 'function') {
+    alert('Thiếu AutoTable, chưa thể xuất PDF lúc này.');
+    return false;
+  }
+
   const sessions = getSessions(30);
   const dateText = new Date().toLocaleDateString('vi-VN');
 
@@ -259,6 +250,7 @@ export function exportPDF(childName, childAge) {
   }
 
   doc.save('bao-cao-tien-bo.pdf');
+  return true;
 }
 
 export function handleReportClick(x, y) {

@@ -1,6 +1,7 @@
-import { GAME, LEVELS } from './config.js';
+import { CANVAS, GAME, LEVELS } from './config.js';
 import { Butterfly } from './butterfly.js';
-import { drawBackground, updateBackground } from './background.js';
+import { drawBackground } from './background.js';
+import { drawRoundRect } from './canvas-utils.js';
 import { getHoldDuration, getPointer } from './input.js';
 
 const MAX_LEVEL_TIME_MS = 60000;
@@ -14,26 +15,6 @@ let _startTime = 0;
 let _sampleTimer = 0;
 let _trackSamples = 0;
 let _trackHits = 0;
-
-function _drawRoundRect(ctx, x, y, w, h, radius) {
-  const r = Math.min(radius, w / 2, h / 2);
-  if (typeof ctx.roundRect === 'function') {
-    ctx.beginPath();
-    ctx.roundRect(x, y, w, h, r);
-    return;
-  }
-
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-}
 
 function _distance(x1, y1, x2, y2) {
   const dx = x2 - x1;
@@ -71,8 +52,6 @@ export function initLevel(levelIndex) {
 }
 
 export function updateGameplay(dt) {
-  updateBackground(dt);
-
   const ptr = getPointer();
   const hold = getHoldDuration();
 
@@ -140,7 +119,7 @@ export function drawGameplay(ctx) {
 
   ctx.save();
   ctx.fillStyle = 'rgba(255,255,255,0.9)';
-  _drawRoundRect(ctx, CANVAS.WIDTH / 2 - 320, 12, 640, 58, 28);
+  drawRoundRect(ctx, CANVAS.WIDTH / 2 - 320, 12, 640, 58, 28);
   ctx.fill();
 
   ctx.fillStyle = '#2C3E50';
@@ -211,7 +190,7 @@ export function calculateStars() {
   if (_score >= 1) {
     return 1;
   }
-  return 1;
+  return 0;
 }
 
 export function getSessionData() {
