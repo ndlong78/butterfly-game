@@ -1,33 +1,29 @@
 import { CANVAS } from './config.js';
 import { drawBackground } from './background.js';
 import { Butterfly } from './butterfly.js';
+import { drawRoundRect } from './canvas-utils.js';
 
 const _menuBtns = {};
 const _levelEndBtns = {};
+const _profileBtns = {
+  namePrev: null,
+  nameNext: null,
+  ageMinus: null,
+  agePlus: null,
+  continue: null,
+  cancel: null,
+};
+const _pinBtns = {
+  digits: new Array(10),
+  back: null,
+  clear: null,
+  submit: null,
+  cancel: null,
+};
 const _decorButterflies = [];
 
 function isPortraitMode() {
   return window.innerHeight > window.innerWidth;
-}
-
-function drawRoundRect(ctx, x, y, w, h, radius) {
-  const r = Math.min(radius, w / 2, h / 2);
-  if (typeof ctx.roundRect === 'function') {
-    ctx.beginPath();
-    ctx.roundRect(x, y, w, h, r);
-    return;
-  }
-
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
 }
 
 function hit(bounds, x, y) {
@@ -76,6 +72,19 @@ function drawStar(ctx, x, y, size, active, scale) {
   }
   ctx.fill();
   ctx.restore();
+}
+
+function drawButton(ctx, bounds, label, color, font = 'bold 28px Arial') {
+  ctx.fillStyle = color;
+  drawRoundRect(ctx, bounds.x, bounds.y, bounds.w, bounds.h, 16);
+  ctx.fill();
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = font;
+  ctx.fillText(label, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
+  ctx.textBaseline = 'alphabetic';
 }
 
 export function drawMenuScreen(ctx, frameCount) {
@@ -142,6 +151,111 @@ export function drawMenuScreen(ctx, frameCount) {
   for (let i = 0; i < _decorButterflies.length; i += 1) {
     _decorButterflies[i].update(16.67);
     _decorButterflies[i].draw(ctx);
+  }
+}
+
+export function drawProfileScreen(ctx, profile, errorText = '') {
+  drawBackground(ctx);
+
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillRect(0, 0, CANVAS.WIDTH, CANVAS.HEIGHT);
+
+  const card = { x: CANVAS.WIDTH / 2 - 300, y: 100, w: 600, h: 520 };
+  ctx.fillStyle = '#FFFFFF';
+  drawRoundRect(ctx, card.x, card.y, card.w, card.h, 24);
+  ctx.fill();
+
+  ctx.fillStyle = '#2C3E50';
+  ctx.font = 'bold 40px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('Hồ sơ bé', CANVAS.WIDTH / 2, 160);
+
+  ctx.font = '24px Arial';
+  ctx.textAlign = 'left';
+  ctx.fillText('Tên bé', card.x + 70, 230);
+  ctx.fillText('Tuổi', card.x + 70, 340);
+
+  const nameBox = { x: card.x + 170, y: 190, w: 300, h: 60 };
+  const ageBox = { x: card.x + 220, y: 300, w: 200, h: 60 };
+  drawButton(ctx, nameBox, profile.name, '#3B82F6');
+  drawButton(ctx, ageBox, String(profile.age), '#10B981');
+
+  _profileBtns.namePrev = { x: card.x + 90, y: 190, w: 60, h: 60 };
+  _profileBtns.nameNext = { x: card.x + 490, y: 190, w: 60, h: 60 };
+  _profileBtns.ageMinus = { x: card.x + 140, y: 300, w: 60, h: 60 };
+  _profileBtns.agePlus = { x: card.x + 440, y: 300, w: 60, h: 60 };
+
+  drawButton(ctx, _profileBtns.namePrev, '◀', '#64748B');
+  drawButton(ctx, _profileBtns.nameNext, '▶', '#64748B');
+  drawButton(ctx, _profileBtns.ageMinus, '-', '#64748B');
+  drawButton(ctx, _profileBtns.agePlus, '+', '#64748B');
+
+  _profileBtns.continue = { x: card.x + 120, y: 450, w: 160, h: 56 };
+  _profileBtns.cancel = { x: card.x + 320, y: 450, w: 160, h: 56 };
+
+  drawButton(ctx, _profileBtns.continue, 'Tiếp tục', '#2563EB', 'bold 26px Arial');
+  drawButton(ctx, _profileBtns.cancel, 'Hủy', '#9CA3AF', 'bold 26px Arial');
+
+  if (errorText) {
+    ctx.fillStyle = '#DC2626';
+    ctx.textAlign = 'center';
+    ctx.font = '22px Arial';
+    ctx.fillText(errorText, CANVAS.WIDTH / 2, 410);
+  }
+}
+
+export function drawPinScreen(ctx, pinValue, mode, errorText = '') {
+  drawBackground(ctx);
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillRect(0, 0, CANVAS.WIDTH, CANVAS.HEIGHT);
+
+  const card = { x: CANVAS.WIDTH / 2 - 250, y: 60, w: 500, h: 600 };
+  ctx.fillStyle = '#FFFFFF';
+  drawRoundRect(ctx, card.x, card.y, card.w, card.h, 24);
+  ctx.fill();
+
+  ctx.fillStyle = '#2C3E50';
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 34px Arial';
+  ctx.fillText(mode === 'setup' ? 'Thiết lập mã phụ huynh' : 'Nhập mã phụ huynh', CANVAS.WIDTH / 2, 120);
+
+  const mask = pinValue.length > 0 ? '●'.repeat(pinValue.length) : '____';
+  ctx.font = 'bold 42px Arial';
+  ctx.fillStyle = '#111827';
+  ctx.fillText(mask, CANVAS.WIDTH / 2, 190);
+
+  const keypadStartX = card.x + 70;
+  const keypadStartY = 230;
+  const keyW = 100;
+  const keyH = 70;
+  const gap = 15;
+
+  const labels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+  for (let i = 0; i < labels.length; i += 1) {
+    const col = i % 3;
+    const row = Math.floor(i / 3);
+    const rowOffset = i === 9 ? 1 : 0;
+    const x = keypadStartX + (i === 9 ? rowOffset : col) * (keyW + gap);
+    const y = keypadStartY + row * (keyH + gap);
+    const btn = { x, y, w: keyW, h: keyH };
+    _pinBtns.digits[Number(labels[i])] = btn;
+    drawButton(ctx, btn, labels[i], '#334155');
+  }
+
+  _pinBtns.back = { x: card.x + 70, y: 530, w: 95, h: 48 };
+  _pinBtns.clear = { x: card.x + 180, y: 530, w: 95, h: 48 };
+  _pinBtns.submit = { x: card.x + 290, y: 530, w: 140, h: 48 };
+  _pinBtns.cancel = { x: card.x + 290, y: 460, w: 140, h: 48 };
+
+  drawButton(ctx, _pinBtns.back, '⌫', '#6B7280', 'bold 22px Arial');
+  drawButton(ctx, _pinBtns.clear, 'Xóa', '#6B7280', 'bold 22px Arial');
+  drawButton(ctx, _pinBtns.submit, 'Xác nhận', '#2563EB', 'bold 22px Arial');
+  drawButton(ctx, _pinBtns.cancel, 'Hủy', '#9CA3AF', 'bold 22px Arial');
+
+  if (errorText) {
+    ctx.fillStyle = '#DC2626';
+    ctx.font = '20px Arial';
+    ctx.fillText(errorText, CANVAS.WIDTH / 2, 490);
   }
 }
 
@@ -225,6 +339,51 @@ export function handleMenuClick(x, y) {
 
   if (hit(_menuBtns.report, x, y)) {
     return 'report';
+  }
+
+  return null;
+}
+
+export function handleProfileClick(x, y) {
+  if (hit(_profileBtns.namePrev, x, y)) {
+    return 'name_prev';
+  }
+  if (hit(_profileBtns.nameNext, x, y)) {
+    return 'name_next';
+  }
+  if (hit(_profileBtns.ageMinus, x, y)) {
+    return 'age_minus';
+  }
+  if (hit(_profileBtns.agePlus, x, y)) {
+    return 'age_plus';
+  }
+  if (hit(_profileBtns.continue, x, y)) {
+    return 'continue';
+  }
+  if (hit(_profileBtns.cancel, x, y)) {
+    return 'cancel';
+  }
+  return null;
+}
+
+export function handlePinClick(x, y) {
+  for (let digit = 0; digit <= 9; digit += 1) {
+    if (hit(_pinBtns.digits[digit], x, y)) {
+      return `digit_${digit}`;
+    }
+  }
+
+  if (hit(_pinBtns.back, x, y)) {
+    return 'back';
+  }
+  if (hit(_pinBtns.clear, x, y)) {
+    return 'clear';
+  }
+  if (hit(_pinBtns.submit, x, y)) {
+    return 'submit';
+  }
+  if (hit(_pinBtns.cancel, x, y)) {
+    return 'cancel';
   }
 
   return null;

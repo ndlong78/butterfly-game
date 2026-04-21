@@ -10,7 +10,6 @@ export const GAME = {
   EYE_CHECK_SECONDS: 5,
   BRIGHTNESS_THRESHOLD: 40,
   MAX_SESSIONS: 500,
-  PARENT_PASSWORD: '1234',
 };
 
 export const LEVELS = [

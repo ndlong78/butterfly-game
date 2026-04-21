@@ -1,6 +1,8 @@
 export const States = {
   MENU: 'MENU',
   EYE_CHECK: 'EYE_CHECK',
+  PROFILE: 'PROFILE',
+  PARENT_PIN: 'PARENT_PIN',
   PLAYING: 'PLAYING',
   LEVEL_END: 'LEVEL_END',
   REPORT: 'REPORT',
