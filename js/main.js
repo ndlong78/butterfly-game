@@ -1,7 +1,7 @@
 import { States, getCurrentState, transition } from './state.js';
 import { CANVAS, GAME } from './config.js';
 import { initBackground, updateBackground, drawBackground } from './background.js';
-import { initInput, getPointer, getHoldDuration, destroyInput } from './input.js';
+import { initInput, getPointer, getHoldDuration, consumeTap, destroyInput } from './input.js';
 import { initLevel, updateGameplay, drawGameplay, getSessionData } from './gameplay.js';
 import {
   startCamera,
@@ -40,7 +40,6 @@ let _lastSession = null;
 let _lastTime = 0;
 let _canvasCssWidth = 0;
 let _canvasCssHeight = 0;
-let _lastPointerDown = false;
 let _eyeAnalyzeTick = 0;
 let _eyeCheckFlowId = 0;
 
@@ -247,12 +246,9 @@ function loop(timestamp) {
   _lastTime = timestamp;
   _frameCount += 1;
 
-  const ptr = getPointer();
-  const isTap = ptr.isDown && !_lastPointerDown;
-  _lastPointerDown = ptr.isDown;
-
-  if (isTap) {
-    handleTap(ptr.x, ptr.y);
+  const tap = consumeTap();
+  if (tap) {
+    handleTap(tap.x, tap.y);
   }
 
   updateHiddenTrigger(dt);
