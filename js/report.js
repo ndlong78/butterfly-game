@@ -1,5 +1,6 @@
 import { CANVAS, GAME } from './config.js';
 import { drawRoundRect } from './canvas-utils.js';
+import { isMobileLayout } from './viewport.js';
 
 const STORAGE_KEY = 'butterflygame_sessions';
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -276,7 +277,7 @@ function drawRecentSessionsTable(ctx, sessions, startY, WIDTH) {
  */
 export function drawReportScreen(ctx, childName = '') {
   const { WIDTH, HEIGHT } = CANVAS;
-  const mobile = window.innerHeight > window.innerWidth || window.innerWidth <= 900;
+  const mobile = isMobileLayout();
   const sessions30 = getSessions(30);
 
   const bg = ctx.createLinearGradient(0, 0, 0, HEIGHT);
@@ -293,7 +294,7 @@ export function drawReportScreen(ctx, childName = '') {
     ctx.fillStyle = 'white';
     ctx.font = 'bold 36px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('📊 BÁO CÁO TIẾN BỘ', WIDTH / 2, 46);
+    ctx.fillText('BÁO CÁO TIẾN BỘ', WIDTH / 2, 46);
 
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.font = '24px Arial';
@@ -349,8 +350,12 @@ export function drawReportScreen(ctx, childName = '') {
 
   // Buttons — chung cho cả hai layout
   const btnY = mobile ? HEIGHT - 82 : HEIGHT - 90;
-  const pdfBtn = { x: WIDTH / 2 - 220, y: btnY, w: 180, h: 56 };
-  const menuBtn = { x: WIDTH / 2 + 40, y: btnY, w: 180, h: 56 };
+  const pdfBtn = mobile
+    ? { x: 60, y: btnY, w: WIDTH / 2 - 70, h: 56 }
+    : { x: WIDTH / 2 - 220, y: btnY, w: 180, h: 56 };
+  const menuBtn = mobile
+    ? { x: WIDTH / 2 + 10, y: btnY, w: WIDTH / 2 - 70, h: 56 }
+    : { x: WIDTH / 2 + 40, y: btnY, w: 180, h: 56 };
   _pdfBtnBounds = pdfBtn;
   _menuBtnBounds = menuBtn;
 
