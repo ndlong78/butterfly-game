@@ -13,9 +13,11 @@ const _state = {
 
 const _logical = { x: 0, y: 0 };
 const _pointerView = { x: _state.x, y: _state.y, isDown: _state.isDown };
+const _tapView = { x: 0, y: 0 };
 
 let _canvas = null;
 let _listeners = [];
+let _tapQueued = false;
 
 function _distance(x1, y1, x2, y2) {
   const dx = x2 - x1;
@@ -43,6 +45,7 @@ function _toLogical(e) {
 }
 
 function _updateFromEvent(e) {
+  const wasDown = _state.isDown;
   const pos = _toLogical(e);
   _state.x = pos.x;
   _state.y = pos.y;
@@ -57,6 +60,11 @@ function _updateFromEvent(e) {
     _state.downOriginX = pos.x;
     _state.downOriginY = pos.y;
   } else if (isUpEvent) {
+    if (wasDown) {
+      _tapQueued = true;
+      _tapView.x = pos.x;
+      _tapView.y = pos.y;
+    }
     _state.isDown = false;
     _state.downSince = null;
     _state.downOriginX = 0;
@@ -110,6 +118,7 @@ export function destroyInput() {
   }
   _listeners = [];
   _canvas = null;
+  _tapQueued = false;
 }
 
 export function getPointer() {
@@ -124,4 +133,13 @@ export function getHoldDuration() {
     return 0;
   }
   return Date.now() - _state.downSince;
+}
+
+export function consumeTap() {
+  if (!_tapQueued) {
+    return null;
+  }
+
+  _tapQueued = false;
+  return _tapView;
 }
