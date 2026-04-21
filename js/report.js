@@ -57,58 +57,69 @@ export function getSessions(days = 30) {
   }
 }
 
-export function drawReportScreen(ctx, childName = '') {
-  const { WIDTH, HEIGHT } = CANVAS;
-  const sessions30 = getSessions(30);
-
-  const bg = ctx.createLinearGradient(0, 0, 0, HEIGHT);
-  bg.addColorStop(0, '#FFFFFF');
-  bg.addColorStop(1, '#EAF4FF');
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
-  ctx.fillStyle = '#2C3E50';
-  ctx.font = 'bold 48px Arial';
-  ctx.textAlign = 'center';
-  ctx.fillText('📊 BÁO CÁO TIẾN BỘ', WIDTH / 2, 90);
-
-  ctx.strokeStyle = '#2C3E50';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(WIDTH / 2 - 250, 110);
-  ctx.lineTo(WIDTH / 2 + 250, 110);
-  ctx.stroke();
-
-  ctx.textAlign = 'left';
-  ctx.fillStyle = '#34495E';
-  ctx.font = '24px Arial';
-  ctx.fillText(`Bé: ${childName || 'Chưa nhập'}`, 80, 155);
-
-  let totalSeconds = 0;
-  let totalStars = 0;
-  let eyeOk = 0;
-  for (let i = 0; i < sessions30.length; i += 1) {
-    const s = sessions30[i];
-    totalSeconds += Number(s.timeSeconds) || 0;
-    totalStars += Number(s.stars) || 0;
-    if (s.eyeCoverResult === 'covered') {
-      eyeOk += 1;
-    }
-  }
-
+/** Vẽ 4 metric cards dạng 2 cột (mobile) hoặc 3 cột ngang (desktop). */
+function drawMetrics(ctx, sessions30, WIDTH, mobile) {
+  const totalSeconds = sessions30.reduce((s, x) => s + (Number(x.timeSeconds) || 0), 0);
+  const totalStars = sessions30.reduce((s, x) => s + (Number(x.stars) || 0), 0);
+  const eyeOk = sessions30.filter((x) => x.eyeCoverResult === 'covered').length;
+  const eyePct = sessions30.length > 0 ? Math.round((eyeOk / sessions30.length) * 100) : 0;
   const totalHours = Math.floor(totalSeconds / 3600);
   const totalMinutes = Math.floor((totalSeconds % 3600) / 60);
-  const eyePct = sessions30.length > 0 ? Math.round((eyeOk / sessions30.length) * 100) : 0;
 
-  ctx.font = 'bold 25px Arial';
-  ctx.fillText(`Tổng thời gian: ${totalHours}h ${totalMinutes}m`, 80, 210);
-  ctx.fillText(`Tổng sao: ⭐${totalStars}`, 480, 210);
-  ctx.fillText(`Tuân thủ che mắt: ${eyePct}%`, 800, 210);
+  const metrics = [
+    { label: 'Tổng thời gian', value: `${totalHours}h ${totalMinutes}m`, color: '#2C3E50' },
+    { label: 'Tổng sao', value: `⭐ ${totalStars}`, color: '#E67E22' },
+    { label: 'Tuân thủ che mắt', value: `${eyePct}%`, color: eyePct >= 70 ? '#27AE60' : '#E74C3C' },
+    { label: 'Số buổi (30 ngày)', value: String(sessions30.length), color: '#2980B9' },
+  ];
 
-  ctx.fillStyle = '#2C3E50';
-  ctx.font = 'bold 30px Arial';
-  ctx.fillText('Sao theo ngày (7 ngày gần nhất)', 80, 290);
+  if (mobile) {
+    // 2×2 grid — mỗi ô đủ rộng đọc thoải mái
+    const colW = (WIDTH - 80 - 12) / 2;
+    const rowH = 80;
+    const startX = 60;
+    const startY = 170;
 
+    for (let i = 0; i < metrics.length; i += 1) {
+      const col = i % 2;
+      const row = Math.floor(i / 2);
+      const cx = startX + col * (colW + 12);
+      const cy = startY + row * (rowH + 10);
+
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      drawRoundRect(ctx, cx, cy, colW, rowH, 12);
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(44,62,80,0.08)';
+      ctx.lineWidth = 1;
+      drawRoundRect(ctx, cx, cy, colW, rowH, 12);
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(44,62,80,0.55)';
+      ctx.font = '20px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(metrics[i].label, cx + colW / 2, cy + 26);
+
+      ctx.fillStyle = metrics[i].color;
+      ctx.font = 'bold 30px Arial';
+      ctx.fillText(metrics[i].value, cx + colW / 2, cy + 60);
+    }
+  } else {
+    // 3 số ngang như cũ (desktop không thay đổi)
+    ctx.font = 'bold 25px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#34495E';
+    ctx.fillText(`Tổng thời gian: ${totalHours}h ${totalMinutes}m`, 80, 210);
+    ctx.fillText(`Tổng sao: ⭐${totalStars}`, 480, 210);
+    ctx.fillText(`Tuân thủ che mắt: ${eyePct}%`, 800, 210);
+  }
+}
+
+/**
+ * Vẽ biểu đồ cột 7 ngày.
+ * Trên mobile dùng chartX/barW nhỏ hơn cho vừa.
+ */
+function drawBarChart(ctx, sessions30, WIDTH, chartTopY, mobile) {
   const labels = new Array(7);
   const starsByDay = new Array(7);
   const now = new Date();
@@ -129,11 +140,14 @@ export function drawReportScreen(ctx, childName = '') {
     }
   }
 
-  const chartX = 110;
-  const chartY = 450;
-  const chartH = 100;
-  const barW = 55;
-  const gap = 36;
+  // Mobile: cột hẹp hơn, khoảng cách nhỏ hơn
+  const barW = mobile ? 48 : 55;
+  const gap = mobile ? 20 : 36;
+  const chartH = mobile ? 90 : 100;
+  const totalBarZone = 7 * barW + 6 * gap;
+  const chartX = WIDTH / 2 - totalBarZone / 2;
+  const chartY = chartTopY + chartH;
+
   let maxStars = 1;
   for (let i = 0; i < starsByDay.length; i += 1) {
     if (starsByDay[i] > maxStars) {
@@ -145,7 +159,7 @@ export function drawReportScreen(ctx, childName = '') {
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(chartX - 20, chartY);
-  ctx.lineTo(chartX + 7 * (barW + gap), chartY);
+  ctx.lineTo(chartX + totalBarZone + 20, chartY);
   ctx.stroke();
 
   for (let i = 0; i < 7; i += 1) {
@@ -153,17 +167,190 @@ export function drawReportScreen(ctx, childName = '') {
     const h = (starsByDay[i] / maxStars) * chartH;
 
     ctx.fillStyle = '#3498DB';
-    drawRoundRect(ctx, x, chartY - h, barW, h, 8);
-    ctx.fill();
+    if (h > 0) {
+      drawRoundRect(ctx, x, chartY - h, barW, h, 8);
+      ctx.fill();
+    }
 
     ctx.fillStyle = '#2C3E50';
     ctx.textAlign = 'center';
-    ctx.font = '18px Arial';
-    ctx.fillText(labels[i], x + barW / 2, chartY + 28);
+    ctx.font = mobile ? '20px Arial' : '18px Arial';
+    ctx.fillText(labels[i], x + barW / 2, chartY + (mobile ? 30 : 28));
+
+    if (starsByDay[i] > 0) {
+      ctx.fillStyle = '#E67E22';
+      ctx.font = mobile ? 'bold 20px Arial' : 'bold 16px Arial';
+      ctx.fillText(String(starsByDay[i]), x + barW / 2, chartY - h - 6);
+    }
+  }
+}
+
+/**
+ * Vẽ bảng phiên chơi gần nhất (tối đa 5 phiên) — chỉ mobile.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {object[]} sessions
+ * @param {number} startY
+ * @param {number} WIDTH
+ */
+function drawRecentSessionsTable(ctx, sessions, startY, WIDTH) {
+  const recent = sessions.slice(0, 5);
+  if (recent.length === 0) {
+    return;
   }
 
-  const pdfBtn = { x: WIDTH / 2 - 220, y: HEIGHT - 90, w: 180, h: 56 };
-  const menuBtn = { x: WIDTH / 2 + 40, y: HEIGHT - 90, w: 180, h: 56 };
+  const tableX = 60;
+  const tableW = WIDTH - 120;
+  const rowH = 52;
+  const headerH = 36;
+
+  // Header
+  ctx.fillStyle = '#2C3E50';
+  drawRoundRect(ctx, tableX, startY, tableW, headerH, 10);
+  ctx.fill();
+
+  ctx.fillStyle = 'white';
+  ctx.font = 'bold 20px Arial';
+  ctx.textAlign = 'left';
+  ctx.fillText('Ngày', tableX + 16, startY + 24);
+  ctx.textAlign = 'center';
+  ctx.fillText('Level', tableX + tableW * 0.38, startY + 24);
+  ctx.fillText('Sao', tableX + tableW * 0.57, startY + 24);
+  ctx.fillText('T.gian', tableX + tableW * 0.75, startY + 24);
+  ctx.fillText('Mắt', tableX + tableW * 0.92, startY + 24);
+
+  for (let i = 0; i < recent.length; i += 1) {
+    const s = recent[i];
+    const ry = startY + headerH + i * rowH;
+    const isEven = i % 2 === 0;
+
+    ctx.fillStyle = isEven ? 'rgba(255,255,255,0.9)' : 'rgba(236,240,241,0.7)';
+    ctx.fillRect(tableX, ry, tableW, rowH);
+
+    ctx.strokeStyle = 'rgba(44,62,80,0.07)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(tableX, ry + rowH);
+    ctx.lineTo(tableX + tableW, ry + rowH);
+    ctx.stroke();
+
+    const midY = ry + rowH / 2 + 7;
+
+    ctx.fillStyle = '#34495E';
+    ctx.font = '20px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText(formatDateShort(s.date), tableX + 16, midY);
+
+    ctx.textAlign = 'center';
+    ctx.fillText(`L${s.level || 1}`, tableX + tableW * 0.38, midY);
+
+    // Stars
+    const starCount = Number(s.stars) || 0;
+    let starStr = '';
+    for (let k = 0; k < starCount; k += 1) {
+      starStr += '★';
+    }
+    ctx.fillStyle = '#F1C40F';
+    ctx.font = 'bold 20px Arial';
+    ctx.fillText(starStr || '—', tableX + tableW * 0.57, midY);
+
+    ctx.fillStyle = '#34495E';
+    ctx.font = '20px Arial';
+    ctx.fillText(`${s.timeSeconds || 0}s`, tableX + tableW * 0.75, midY);
+
+    const eyeOk = s.eyeCoverResult === 'covered';
+    ctx.fillStyle = eyeOk ? '#27AE60' : '#95A5A6';
+    ctx.fillText(eyeOk ? '✓' : '—', tableX + tableW * 0.92, midY);
+  }
+
+  // Rounded border quanh toàn bảng
+  const totalH = headerH + recent.length * rowH;
+  ctx.strokeStyle = 'rgba(44,62,80,0.12)';
+  ctx.lineWidth = 1.5;
+  drawRoundRect(ctx, tableX, startY, tableW, totalH, 10);
+  ctx.stroke();
+}
+
+/**
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {string} childName
+ */
+export function drawReportScreen(ctx, childName = '') {
+  const { WIDTH, HEIGHT } = CANVAS;
+  const mobile = window.innerHeight > window.innerWidth || window.innerWidth <= 900;
+  const sessions30 = getSessions(30);
+
+  const bg = ctx.createLinearGradient(0, 0, 0, HEIGHT);
+  bg.addColorStop(0, '#FFFFFF');
+  bg.addColorStop(1, '#EAF4FF');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+  if (mobile) {
+    // Header bar tối — tên + tuổi bé nổi bật
+    ctx.fillStyle = '#2C3E50';
+    ctx.fillRect(0, 0, WIDTH, 88);
+
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 36px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('📊 BÁO CÁO TIẾN BỘ', WIDTH / 2, 46);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = '24px Arial';
+    ctx.fillText(`Bé: ${childName || 'Chưa nhập'}`, WIDTH / 2, 76);
+
+    // Metrics 2×2
+    drawMetrics(ctx, sessions30, WIDTH, true);
+
+    // Chart title
+    ctx.fillStyle = '#2C3E50';
+    ctx.font = 'bold 26px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('Sao theo ngày (7 ngày gần nhất)', 60, 368);
+
+    drawBarChart(ctx, sessions30, WIDTH, 372, true);
+
+    // Recent sessions table
+    ctx.fillStyle = '#2C3E50';
+    ctx.font = 'bold 26px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('Phiên gần nhất', 60, 500);
+
+    drawRecentSessionsTable(ctx, sessions30, 510, WIDTH);
+
+  } else {
+    // Desktop layout — không thay đổi
+    ctx.fillStyle = '#2C3E50';
+    ctx.font = 'bold 48px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('📊 BÁO CÁO TIẾN BỘ', WIDTH / 2, 90);
+
+    ctx.strokeStyle = '#2C3E50';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(WIDTH / 2 - 250, 110);
+    ctx.lineTo(WIDTH / 2 + 250, 110);
+    ctx.stroke();
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#34495E';
+    ctx.font = '24px Arial';
+    ctx.fillText(`Bé: ${childName || 'Chưa nhập'}`, 80, 155);
+
+    drawMetrics(ctx, sessions30, WIDTH, false);
+
+    ctx.fillStyle = '#2C3E50';
+    ctx.font = 'bold 30px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('Sao theo ngày (7 ngày gần nhất)', 80, 290);
+
+    drawBarChart(ctx, sessions30, WIDTH, 295, false);
+  }
+
+  // Buttons — chung cho cả hai layout
+  const btnY = mobile ? HEIGHT - 82 : HEIGHT - 90;
+  const pdfBtn = { x: WIDTH / 2 - 220, y: btnY, w: 180, h: 56 };
+  const menuBtn = { x: WIDTH / 2 + 40, y: btnY, w: 180, h: 56 };
   _pdfBtnBounds = pdfBtn;
   _menuBtnBounds = menuBtn;
 
