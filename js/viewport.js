@@ -25,7 +25,14 @@ export function isMobileLayout() {
   const ua = navigator.userAgent || '';
   const iosUA = /iPhone|iPad|iPod/i.test(ua);
 
-  if (shortSide > 0 && shortSide <= 900) {
+  // Màn hình hẹp theo chiều ngang luôn ưu tiên mobile.
+  if (width > 0 && width <= 900) {
+    return true;
+  }
+
+  // Tránh nhận nhầm desktop cửa sổ thấp (vd 1280x720) là mobile:
+  // short-side chỉ dùng khi có tín hiệu thiết bị cảm ứng/coarse/iOS.
+  if (shortSide > 0 && shortSide <= 900 && (touchCapable || coarsePointer || iosUA)) {
     return true;
   }
 
@@ -37,4 +44,3 @@ export function isPortraitLayout() {
   const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
   return height > width;
 }
-
