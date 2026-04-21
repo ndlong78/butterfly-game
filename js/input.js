@@ -15,6 +15,7 @@ const _logical = { x: 0, y: 0 };
 const _pointerView = { x: _state.x, y: _state.y, isDown: _state.isDown };
 
 let _canvas = null;
+let _listeners = [];
 
 function _distance(x1, y1, x2, y2) {
   const dx = x2 - x1;
@@ -70,7 +71,14 @@ function _updateFromEvent(e) {
   }
 }
 
+function addEventListenerWithCleanup(target, event, handler, options) {
+  target.addEventListener(event, handler, options);
+  _listeners.push(() => target.removeEventListener(event, handler, options));
+}
+
 export function initInput(canvas) {
+  destroyInput();
+
   _canvas = canvas;
 
   const handler = (e) => {
@@ -82,18 +90,26 @@ export function initInput(canvas) {
     _updateFromEvent(e);
   };
 
-  canvas.addEventListener('mousemove', handler);
-  canvas.addEventListener('mousedown', handler);
-  canvas.addEventListener('mouseup', handler);
+  addEventListenerWithCleanup(canvas, 'mousemove', handler);
+  addEventListenerWithCleanup(canvas, 'mousedown', handler);
+  addEventListenerWithCleanup(canvas, 'mouseup', handler);
 
-  canvas.addEventListener('touchstart', handler, { passive: false });
-  canvas.addEventListener('touchmove', handler, { passive: false });
-  canvas.addEventListener('touchend', handler, { passive: false });
-  canvas.addEventListener('touchcancel', handler, { passive: false });
+  addEventListenerWithCleanup(canvas, 'touchstart', handler, { passive: false });
+  addEventListenerWithCleanup(canvas, 'touchmove', handler, { passive: false });
+  addEventListenerWithCleanup(canvas, 'touchend', handler, { passive: false });
+  addEventListenerWithCleanup(canvas, 'touchcancel', handler, { passive: false });
 
-  window.addEventListener('mouseup', releaseHandler);
-  window.addEventListener('touchend', releaseHandler, { passive: true });
-  window.addEventListener('touchcancel', releaseHandler, { passive: true });
+  addEventListenerWithCleanup(window, 'mouseup', releaseHandler);
+  addEventListenerWithCleanup(window, 'touchend', releaseHandler, { passive: true });
+  addEventListenerWithCleanup(window, 'touchcancel', releaseHandler, { passive: true });
+}
+
+export function destroyInput() {
+  for (let i = 0; i < _listeners.length; i += 1) {
+    _listeners[i]();
+  }
+  _listeners = [];
+  _canvas = null;
 }
 
 export function getPointer() {

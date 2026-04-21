@@ -1,10 +1,17 @@
 import { States, getCurrentState, transition } from './state.js';
 import { CANVAS, GAME } from './config.js';
 import { initBackground, updateBackground, drawBackground } from './background.js';
-import { initInput, getPointer, getHoldDuration } from './input.js';
+import { initInput, getPointer, getHoldDuration, destroyInput } from './input.js';
 import { initLevel, updateGameplay, drawGameplay, getSessionData } from './gameplay.js';
-import { startCamera, stopCamera, analyzeFrame, drawEyeCheckScreen, isSkipButton } from './camera.js';
-import { initVoice, speak } from './voice.js';
+import {
+  startCamera,
+  stopCamera,
+  analyzeFrame,
+  drawEyeCheckScreen,
+  isSkipButton,
+  getCameraErrorCode,
+} from './camera.js';
+import { initVoice, speak, destroyVoice } from './voice.js';
 import { saveSession, drawReportScreen, exportPDF, handleReportClick } from './report.js';
 import { drawMenuScreen, drawLevelEndScreen, handleMenuClick, handleLevelEndClick } from './screens.js';
 
@@ -17,6 +24,10 @@ const ctx = canvas.getContext('2d');
 if (!ctx) {
   throw new Error('Không thể khởi tạo Canvas 2D context');
 }
+
+const CHILD_NAME_KEY = 'butterflygame_child_name';
+const CHILD_AGE_KEY = 'butterflygame_child_age';
+const PARENT_PIN_KEY = 'butterflygame_parent_pin';
 
 let _currentLevel = 0;
 let _frameCount = 0;
@@ -31,6 +42,7 @@ let _canvasCssWidth = 0;
 let _canvasCssHeight = 0;
 let _lastPointerDown = false;
 let _eyeAnalyzeTick = 0;
+let _eyeCheckFlowId = 0;
 
 let _childName = '';
 let _childAge = '';
@@ -62,16 +74,93 @@ function resizeCanvas() {
   ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
 }
 
+function loadChildProfile() {
+  _childName = (localStorage.getItem(CHILD_NAME_KEY) || '').trim();
+  _childAge = (localStorage.getItem(CHILD_AGE_KEY) || '').trim();
+}
+
+function requestChildProfile() {
+  if (!_childName) {
+    const name = prompt('Nhập tên bé:');
+    if (name) {
+      _childName = name.trim();
+      localStorage.setItem(CHILD_NAME_KEY, _childName);
+    }
+  }
+
+  if (!_childAge) {
+    const age = prompt('Nhập tuổi bé (2-18):');
+    if (age && /^\d+$/.test(age)) {
+      const ageNum = Number(age);
+      if (ageNum >= 2 && ageNum <= 18) {
+        _childAge = String(ageNum);
+        localStorage.setItem(CHILD_AGE_KEY, _childAge);
+      }
+    }
+  }
+}
+
+function getParentPin() {
+  return (localStorage.getItem(PARENT_PIN_KEY) || '').trim();
+}
+
+function ensureParentPinConfigured() {
+  const currentPin = getParentPin();
+  if (currentPin) {
+    return true;
+  }
+
+  const createdPin = prompt('Thiết lập mã phụ huynh (4-8 chữ số):');
+  if (!createdPin) {
+    return false;
+  }
+
+  const pin = createdPin.trim();
+  if (!/^\d{4,8}$/.test(pin)) {
+    alert('Mã phụ huynh cần từ 4 đến 8 chữ số.');
+    return false;
+  }
+
+  localStorage.setItem(PARENT_PIN_KEY, pin);
+  alert('Đã lưu mã phụ huynh. Giữ kín mã để bảo vệ báo cáo của bé.');
+  return false;
+}
+
+function verifyParentAccess() {
+  if (!ensureParentPinConfigured()) {
+    return false;
+  }
+
+  const pin = getParentPin();
+  const input = prompt('Nhập mã phụ huynh:');
+  return Boolean(input && input.trim() === pin);
+}
+
+function goToPlaying() {
+  stopCamera();
+  initLevel(_currentLevel);
+  transition(States.PLAYING);
+}
+
 function startEyeCheck() {
+  _eyeCheckFlowId += 1;
+  const flowId = _eyeCheckFlowId;
+
   _eyeCheckTimer = 0;
   _eyeAnalyzeTick = 0;
   _eyeCheckStatus = 'waiting';
   transition(States.EYE_CHECK);
 
   startCamera().catch(() => {
-    window.__eyeCheckResult = 'camera_error';
-    initLevel(_currentLevel);
-    transition(States.PLAYING);
+    if (flowId !== _eyeCheckFlowId || getCurrentState() !== States.EYE_CHECK) {
+      return;
+    }
+
+    stopCamera();
+    const code = getCameraErrorCode();
+    window.__eyeCheckResult = code || 'camera_error';
+    _eyeCheckStatus = 'camera_error';
+    goToPlaying();
   });
 }
 
@@ -85,21 +174,23 @@ function handleTap(x, y) {
   if (state === States.MENU) {
     const action = handleMenuClick(x, y);
     if (action === 'start') {
+      requestChildProfile();
       speak('WELCOME');
       startEyeCheck();
     } else if (action === 'report') {
-      transition(States.REPORT);
+      if (verifyParentAccess()) {
+        transition(States.REPORT);
+      }
     }
     return;
   }
 
   if (state === States.EYE_CHECK) {
     if (isSkipButton(x, y)) {
+      _eyeCheckFlowId += 1;
       window.__eyeCheckResult = 'skipped';
-      stopCamera();
       _currentLevel = 0;
-      initLevel(0);
-      transition(States.PLAYING);
+      goToPlaying();
     }
     return;
   }
@@ -137,8 +228,7 @@ function updateHiddenTrigger(dt) {
     _holdCornerTimer += dt;
 
     if (_holdCornerTimer > 3000) {
-      const pwd = prompt('Mật khẩu:');
-      if (pwd === GAME.PARENT_PASSWORD) {
+      if (verifyParentAccess()) {
         transition(States.REPORT);
       }
       _holdCornerTimer = 0;
@@ -185,13 +275,12 @@ function loop(timestamp) {
       }
 
       if (_eyeCheckTimer >= GAME.EYE_CHECK_SECONDS * 1000 || _eyeCheckStatus === 'covered') {
+        _eyeCheckFlowId += 1;
         window.__eyeCheckResult = _eyeCheckStatus;
         if (_eyeCheckStatus === 'covered') {
           speak('EYE_COVERED_OK');
         }
-        stopCamera();
-        initLevel(_currentLevel);
-        transition(States.PLAYING);
+        goToPlaying();
       }
 
       const ratio = _eyeCheckTimer / (GAME.EYE_CHECK_SECONDS * 1000);
@@ -228,8 +317,16 @@ function loop(timestamp) {
   requestAnimationFrame(loop);
 }
 
-window.addEventListener('resize', resizeCanvas);
+function teardown() {
+  stopCamera();
+  destroyInput();
+  destroyVoice();
+}
 
+window.addEventListener('resize', resizeCanvas);
+window.addEventListener('beforeunload', teardown);
+
+loadChildProfile();
 initBackground();
 resizeCanvas();
 initInput(canvas);
