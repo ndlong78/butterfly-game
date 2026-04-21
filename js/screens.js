@@ -7,8 +7,14 @@ const _menuBtns = {};
 const _levelEndBtns = {};
 const _decorButterflies = [];
 
-function isPortraitMode() {
-  return window.innerHeight > window.innerWidth;
+function getViewportProfile() {
+  const portrait = window.innerHeight > window.innerWidth;
+  const narrow = window.innerWidth <= 900;
+
+  return {
+    portrait,
+    mobile: portrait || narrow,
+  };
 }
 
 function hit(bounds, x, y) {
@@ -62,32 +68,35 @@ function drawStar(ctx, x, y, size, active, scale) {
 export function drawMenuScreen(ctx, frameCount) {
   initDecor();
   drawBackground(ctx);
-  const portrait = isPortraitMode();
+  const viewport = getViewportProfile();
 
-  const bounceY = Math.sin(frameCount * 0.03) * (portrait ? 12 : 8);
-  const titleFont = portrait ? 'bold 76px Arial' : 'bold 64px Arial';
-  const subTitleFont = portrait ? '34px Arial' : '28px Arial';
-  const startW = portrait ? 360 : 240;
-  const startH = portrait ? 82 : 60;
-  const startY = portrait ? CANVAS.HEIGHT / 2 + 10 : CANVAS.HEIGHT / 2 + 40;
-  const titleY = portrait ? 180 : 150;
-  const subtitleY = portrait ? 250 : 210;
+  const bounceY = Math.sin(frameCount * 0.03) * (viewport.mobile ? 10 : 7);
+  const centerX = CANVAS.WIDTH / 2;
 
   ctx.save();
   ctx.textAlign = 'center';
   ctx.shadowColor = '#F4D03F';
-  ctx.shadowBlur = 25;
+  ctx.shadowBlur = viewport.mobile ? 20 : 16;
   ctx.fillStyle = '#2C3E50';
-  ctx.font = titleFont;
-  ctx.fillText('🦋 Bướm Bay Mắt Vui 🦋', CANVAS.WIDTH / 2, titleY + bounceY);
+  ctx.font = viewport.mobile ? 'bold 58px Arial' : 'bold 64px Arial';
+
+  if (viewport.mobile) {
+    ctx.fillText('🦋 Bướm Bay', centerX, 148 + bounceY);
+    ctx.fillText('Mắt Vui 🦋', centerX, 214 + bounceY);
+  } else {
+    ctx.fillText('🦋 Bướm Bay Mắt Vui 🦋', centerX, 150 + bounceY);
+  }
   ctx.restore();
 
-  ctx.fillStyle = '#555555';
+  ctx.fillStyle = '#425466';
   ctx.textAlign = 'center';
-  ctx.font = subTitleFont;
-  ctx.fillText('Trò chơi tập mắt vui nhộn cho bé', CANVAS.WIDTH / 2, subtitleY);
+  ctx.font = viewport.mobile ? '30px Arial' : '28px Arial';
+  ctx.fillText('Trò chơi tập mắt vui nhộn cho bé', centerX, viewport.mobile ? 282 : 210);
 
-  const startX = CANVAS.WIDTH / 2 - startW / 2;
+  const startW = viewport.mobile ? 430 : 240;
+  const startH = viewport.mobile ? 88 : 60;
+  const startX = centerX - startW / 2;
+  const startY = viewport.mobile ? 342 : CANVAS.HEIGHT / 2 + 40;
 
   const startGrad = ctx.createLinearGradient(startX, startY, startX + startW, startY + startH);
   startGrad.addColorStop(0, '#4FC3F7');
@@ -100,20 +109,20 @@ export function drawMenuScreen(ctx, frameCount) {
   ctx.fillStyle = '#FFFFFF';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = portrait ? 'bold 36px Arial' : 'bold 28px Arial';
+  ctx.font = viewport.mobile ? 'bold 46px Arial' : 'bold 28px Arial';
   ctx.fillText('BẮT ĐẦU CHƠI', startX + startW / 2, startY + startH / 2);
 
-  const reportW = portrait ? 320 : 220;
-  const reportH = portrait ? 72 : 52;
-  const reportX = CANVAS.WIDTH / 2 - reportW / 2;
-  const reportY = portrait ? CANVAS.HEIGHT - 112 : CANVAS.HEIGHT - 90;
+  const reportW = viewport.mobile ? 360 : 220;
+  const reportH = viewport.mobile ? 68 : 52;
+  const reportX = centerX - reportW / 2;
+  const reportY = viewport.mobile ? 458 : CANVAS.HEIGHT - 90;
 
   ctx.fillStyle = '#95A5A6';
   drawRoundRect(ctx, reportX, reportY, reportW, reportH, 18);
   ctx.fill();
 
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = portrait ? 'bold 32px Arial' : 'bold 24px Arial';
+  ctx.font = viewport.mobile ? 'bold 40px Arial' : 'bold 24px Arial';
   ctx.fillText('Xem Báo Cáo', reportX + reportW / 2, reportY + reportH / 2);
   ctx.textBaseline = 'alphabetic';
 
@@ -127,12 +136,12 @@ export function drawMenuScreen(ctx, frameCount) {
 }
 
 export function drawLevelEndScreen(ctx, stars, levelIndex, frameCount) {
-  const portrait = isPortraitMode();
+  const viewport = getViewportProfile();
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
   ctx.fillRect(0, 0, CANVAS.WIDTH, CANVAS.HEIGHT);
 
-  const cardW = portrait ? 560 : 400;
-  const cardH = portrait ? 470 : 320;
+  const cardW = viewport.mobile ? 640 : 400;
+  const cardH = viewport.mobile ? 500 : 320;
   const cardX = CANVAS.WIDTH / 2 - cardW / 2;
   const cardY = CANVAS.HEIGHT / 2 - cardH / 2;
 
@@ -143,12 +152,19 @@ export function drawLevelEndScreen(ctx, stars, levelIndex, frameCount) {
   const revealed = [frameCount > 30, frameCount > 60, frameCount > 90];
   const waveScale = 1 + Math.sin(frameCount * 0.1) * 0.1;
 
-  const starGap = portrait ? 130 : 90;
-  const sideStarSize = portrait ? 42 : 32;
-  const centerStarSize = portrait ? 52 : 40;
-  const starBaseY = portrait ? cardY + 120 : cardY + 80;
+  const starGap = viewport.mobile ? 145 : 90;
+  const sideStarSize = viewport.mobile ? 44 : 32;
+  const centerStarSize = viewport.mobile ? 54 : 40;
+  const starBaseY = viewport.mobile ? cardY + 132 : cardY + 80;
   drawStar(ctx, CANVAS.WIDTH / 2 - starGap, starBaseY, sideStarSize, revealed[0] && stars >= 1, waveScale);
-  drawStar(ctx, CANVAS.WIDTH / 2, starBaseY - (portrait ? 18 : 12), centerStarSize, revealed[1] && stars >= 2, waveScale);
+  drawStar(
+    ctx,
+    CANVAS.WIDTH / 2,
+    starBaseY - (viewport.mobile ? 18 : 12),
+    centerStarSize,
+    revealed[1] && stars >= 2,
+    waveScale,
+  );
   drawStar(ctx, CANVAS.WIDTH / 2 + starGap, starBaseY, sideStarSize, revealed[2] && stars >= 3, waveScale);
 
   let praise = 'Cố lên! Con làm được mà! 💪';
@@ -160,18 +176,18 @@ export function drawLevelEndScreen(ctx, stars, levelIndex, frameCount) {
 
   ctx.fillStyle = '#2C3E50';
   ctx.textAlign = 'center';
-  ctx.font = portrait ? 'bold 38px Arial' : 'bold 28px Arial';
-  ctx.fillText(praise, CANVAS.WIDTH / 2, portrait ? cardY + 240 : cardY + 150);
+  ctx.font = viewport.mobile ? 'bold 40px Arial' : 'bold 28px Arial';
+  ctx.fillText(praise, CANVAS.WIDTH / 2, viewport.mobile ? cardY + 252 : cardY + 150);
 
   const nextLabel = levelIndex < 3 ? 'Màn tiếp' : 'Hoàn thành';
-  const nextBtn = portrait
-    ? { x: CANVAS.WIDTH / 2 - 170, y: cardY + 280, w: 340, h: 62 }
+  const nextBtn = viewport.mobile
+    ? { x: CANVAS.WIDTH / 2 - 190, y: cardY + 296, w: 380, h: 62 }
     : { x: cardX + 120, y: cardY + 185, w: 160, h: 46 };
-  const replayBtn = portrait
-    ? { x: CANVAS.WIDTH / 2 - 170, y: cardY + 356, w: 340, h: 52 }
+  const replayBtn = viewport.mobile
+    ? { x: CANVAS.WIDTH / 2 - 190, y: cardY + 372, w: 380, h: 52 }
     : { x: cardX + 40, y: cardY + 245, w: 140, h: 46 };
-  const menuBtn = portrait
-    ? { x: CANVAS.WIDTH / 2 - 170, y: cardY + 418, w: 340, h: 52 }
+  const menuBtn = viewport.mobile
+    ? { x: CANVAS.WIDTH / 2 - 190, y: cardY + 436, w: 380, h: 52 }
     : { x: cardX + 220, y: cardY + 245, w: 140, h: 46 };
 
   ctx.fillStyle = '#3498DB';
@@ -187,7 +203,7 @@ export function drawLevelEndScreen(ctx, stars, levelIndex, frameCount) {
   ctx.fill();
 
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = portrait ? 'bold 30px Arial' : 'bold 24px Arial';
+  ctx.font = viewport.mobile ? 'bold 34px Arial' : 'bold 24px Arial';
   ctx.textBaseline = 'middle';
   ctx.fillText(nextLabel, nextBtn.x + nextBtn.w / 2, nextBtn.y + nextBtn.h / 2);
   ctx.fillText('Chơi lại', replayBtn.x + replayBtn.w / 2, replayBtn.y + replayBtn.h / 2);
