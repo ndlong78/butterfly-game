@@ -14,6 +14,7 @@ import {
 import { initVoice, speak, destroyVoice } from './voice.js';
 import { saveSession, drawReportScreen, exportPDF, handleReportClick } from './report.js';
 import { drawMenuScreen, drawLevelEndScreen, handleMenuClick, handleLevelEndClick } from './screens.js';
+import { isMobileLayout, isPortraitLayout } from './viewport.js';
 
 const canvas = document.getElementById('gameCanvas');
 if (!canvas) {
@@ -57,20 +58,34 @@ function resizeCanvas() {
   const dpr = window.devicePixelRatio || 1;
   const viewportW = window.innerWidth;
   const viewportH = window.innerHeight;
-  const uniformScale = Math.min(viewportW / CANVAS.WIDTH, viewportH / CANVAS.HEIGHT);
+  const mobilePortrait = isMobileLayout() && isPortraitLayout();
 
-  _canvasCssWidth = Math.max(1, Math.floor(CANVAS.WIDTH * uniformScale));
-  _canvasCssHeight = Math.max(1, Math.floor(CANVAS.HEIGHT * uniformScale));
+  let scaleX = 1;
+  let scaleY = 1;
 
-  canvas.width = Math.floor(_canvasCssWidth * dpr);
-  canvas.height = Math.floor(_canvasCssHeight * dpr);
+  if (mobilePortrait) {
+    // Mobile portrait ưu tiên full-bleed để không bị letterbox như iPhone screenshot.
+    _canvasCssWidth = Math.max(1, Math.floor(viewportW));
+    _canvasCssHeight = Math.max(1, Math.floor(viewportH));
+    scaleX = _canvasCssWidth / CANVAS.WIDTH;
+    scaleY = _canvasCssHeight / CANVAS.HEIGHT;
+  } else {
+    const uniformScale = Math.min(viewportW / CANVAS.WIDTH, viewportH / CANVAS.HEIGHT);
+    _canvasCssWidth = Math.max(1, Math.floor(CANVAS.WIDTH * uniformScale));
+    _canvasCssHeight = Math.max(1, Math.floor(CANVAS.HEIGHT * uniformScale));
+    scaleX = uniformScale;
+    scaleY = uniformScale;
+  }
+
+  canvas.width = Math.floor(Math.max(1, _canvasCssWidth * dpr));
+  canvas.height = Math.floor(Math.max(1, _canvasCssHeight * dpr));
   canvas.style.width = `${_canvasCssWidth}px`;
   canvas.style.height = `${_canvasCssHeight}px`;
   canvas.style.position = 'absolute';
   canvas.style.left = `${Math.floor((viewportW - _canvasCssWidth) / 2)}px`;
   canvas.style.top = `${Math.floor((viewportH - _canvasCssHeight) / 2)}px`;
 
-  ctx.setTransform(dpr * uniformScale, 0, 0, dpr * uniformScale, 0, 0);
+  ctx.setTransform(dpr * scaleX, 0, 0, dpr * scaleY, 0, 0);
 
   refreshBackgroundLayout();
 }
