@@ -30,25 +30,25 @@ test.beforeEach(async ({ page }) => {
     });
   });
 
-  page.on('dialog', async (dialog) => {
+  page.on('dialog', (dialog) => {
     const msg = dialog.message();
     if (msg.includes('Nhập tên bé')) {
-      await dialog.accept('Bé Na');
+      void dialog.accept('Bé Na').catch(() => {});
       return;
     }
     if (msg.includes('Nhập tuổi bé')) {
-      await dialog.accept('6');
+      void dialog.accept('6').catch(() => {});
       return;
     }
     if (msg.includes('Thiết lập mã phụ huynh')) {
-      await dialog.accept('5678');
+      void dialog.accept('5678').catch(() => {});
       return;
     }
     if (msg.includes('Nhập mã phụ huynh')) {
-      await dialog.accept('5678');
+      void dialog.accept('5678').catch(() => {});
       return;
     }
-    await dialog.dismiss();
+    void dialog.dismiss().catch(() => {});
   });
 });
 
