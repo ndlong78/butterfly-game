@@ -37,7 +37,16 @@ let _childAge = '';
 
 function resizeCanvas() {
   const dpr = window.devicePixelRatio || 1;
-  const scale = Math.min(window.innerWidth / CANVAS.WIDTH, window.innerHeight / CANVAS.HEIGHT);
+  const fitScale = Math.min(window.innerWidth / CANVAS.WIDTH, window.innerHeight / CANVAS.HEIGHT);
+  const isPortrait = window.innerHeight > window.innerWidth;
+  let scale = fitScale;
+
+  if (isPortrait) {
+    const mobileVisibleWidth = 760;
+    const portraitZoomScale = window.innerWidth / mobileVisibleWidth;
+    const maxScale = window.innerHeight / CANVAS.HEIGHT;
+    scale = Math.max(fitScale, Math.min(portraitZoomScale, maxScale));
+  }
 
   _canvasCssWidth = Math.floor(CANVAS.WIDTH * scale);
   _canvasCssHeight = Math.floor(CANVAS.HEIGHT * scale);
