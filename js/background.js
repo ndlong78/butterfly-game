@@ -10,6 +10,7 @@ const birds = new Array(BIRD_COUNT);
 let staticCanvas = null;
 let staticCtx = null;
 let isInitialized = false;
+let _portraitLayout = false;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -46,23 +47,23 @@ function drawStaticBackground() {
     throw new Error('Không thể tạo offscreen canvas cho background');
   }
 
-  const grassY = Math.floor(CANVAS.HEIGHT * 0.7);
+  const grassY = Math.floor(CANVAS.HEIGHT * (_portraitLayout ? 0.58 : 0.7));
 
-  const skyGradient = staticCtx.createLinearGradient(0, 0, 0, Math.floor(CANVAS.HEIGHT * 0.7));
+  const skyGradient = staticCtx.createLinearGradient(0, 0, 0, grassY);
   skyGradient.addColorStop(0, COLORS.sky);
   skyGradient.addColorStop(1, COLORS.skyLight);
   staticCtx.fillStyle = skyGradient;
-  staticCtx.fillRect(0, 0, CANVAS.WIDTH, Math.floor(CANVAS.HEIGHT * 0.7));
+  staticCtx.fillRect(0, 0, CANVAS.WIDTH, grassY);
 
   staticCtx.save();
   staticCtx.globalAlpha = 0.25;
   staticCtx.lineWidth = 12;
-  const rbX = CANVAS.WIDTH * 0.85;
-  const rbY = CANVAS.HEIGHT;
+  const rbX = _portraitLayout ? CANVAS.WIDTH * 0.8 : CANVAS.WIDTH * 0.85;
+  const rbY = _portraitLayout ? CANVAS.HEIGHT * 0.88 : CANVAS.HEIGHT;
   for (let i = 0; i < 7; i += 1) {
     staticCtx.strokeStyle = COLORS.rainbow[i % COLORS.rainbow.length];
     staticCtx.beginPath();
-    staticCtx.arc(rbX, rbY, 280 + i * 40, Math.PI, Math.PI * 2);
+    staticCtx.arc(rbX, rbY, (_portraitLayout ? 180 : 280) + i * (_portraitLayout ? 30 : 40), Math.PI, Math.PI * 2);
     staticCtx.stroke();
   }
   staticCtx.restore();
@@ -82,8 +83,10 @@ function drawStaticBackground() {
   staticCtx.fillStyle = '#78CC57';
   staticCtx.fill();
 
+  const flowerStartX = _portraitLayout ? 60 : 100;
+  const flowerGap = _portraitLayout ? 106 : 120;
   for (let i = 0; i < 10; i += 1) {
-    const fx = 100 + i * 120;
+    const fx = flowerStartX + i * flowerGap;
     const fy = grassY + 18 + Math.sin(i * 0.9) * 8;
     staticCtx.strokeStyle = '#3C9D3A';
     staticCtx.lineWidth = 3;
@@ -182,6 +185,7 @@ function drawBird(ctx, bird) {
 }
 
 export function initBackground() {
+  _portraitLayout = window.innerHeight > window.innerWidth;
   drawStaticBackground();
 
   for (let i = 0; i < CLOUD_COUNT; i += 1) {
@@ -241,4 +245,14 @@ export function drawBackground(ctx) {
   for (let i = 0; i < BIRD_COUNT; i += 1) {
     drawBird(ctx, birds[i]);
   }
+}
+
+export function refreshBackgroundLayout() {
+  const portraitLayout = window.innerHeight > window.innerWidth;
+  if (_portraitLayout === portraitLayout && staticCanvas) {
+    return;
+  }
+
+  _portraitLayout = portraitLayout;
+  drawStaticBackground();
 }

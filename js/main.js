@@ -1,6 +1,6 @@
 import { States, getCurrentState, transition } from './state.js';
 import { CANVAS, GAME } from './config.js';
-import { initBackground, updateBackground, drawBackground } from './background.js';
+import { initBackground, updateBackground, drawBackground, refreshBackgroundLayout } from './background.js';
 import { initInput, getPointer, getHoldDuration, consumeTap, destroyInput } from './input.js';
 import { initLevel, updateGameplay, drawGameplay, getSessionData, handleGameplayClick } from './gameplay.js';
 import {
@@ -42,6 +42,7 @@ let _canvasCssWidth = 0;
 let _canvasCssHeight = 0;
 let _eyeAnalyzeTick = 0;
 let _eyeCheckFlowId = 0;
+let _isPortraitViewport = false;
 
 let _childName = '';
 let _childAge = '';
@@ -50,10 +51,13 @@ function resizeCanvas() {
   const dpr = window.devicePixelRatio || 1;
   const viewportW = window.innerWidth;
   const viewportH = window.innerHeight;
-  const scale = Math.min(viewportW / CANVAS.WIDTH, viewportH / CANVAS.HEIGHT);
+  _isPortraitViewport = viewportH > viewportW;
 
-  _canvasCssWidth = Math.floor(CANVAS.WIDTH * scale);
-  _canvasCssHeight = Math.floor(CANVAS.HEIGHT * scale);
+  const scaleX = _isPortraitViewport ? viewportW / CANVAS.WIDTH : Math.min(viewportW / CANVAS.WIDTH, viewportH / CANVAS.HEIGHT);
+  const scaleY = _isPortraitViewport ? viewportH / CANVAS.HEIGHT : scaleX;
+
+  _canvasCssWidth = Math.floor(CANVAS.WIDTH * scaleX);
+  _canvasCssHeight = Math.floor(CANVAS.HEIGHT * scaleY);
 
   canvas.width = Math.floor(_canvasCssWidth * dpr);
   canvas.height = Math.floor(_canvasCssHeight * dpr);
@@ -63,7 +67,9 @@ function resizeCanvas() {
   canvas.style.left = `${Math.floor((viewportW - _canvasCssWidth) / 2)}px`;
   canvas.style.top = `${Math.floor((viewportH - _canvasCssHeight) / 2)}px`;
 
-  ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
+  ctx.setTransform(dpr * scaleX, 0, 0, dpr * scaleY, 0, 0);
+
+  refreshBackgroundLayout();
 }
 
 function loadChildProfile() {
