@@ -143,10 +143,10 @@ export function drawMenuScreen(ctx, frameCount, opts = {}) {
   ctx.font = viewport.mobile ? 'bold 58px Arial' : 'bold 64px Arial';
 
   if (viewport.mobile) {
-    ctx.fillText('🦋 Bướm Bay', centerX, 148 + bounceY);
-    ctx.fillText('Mắt Vui 🦋', centerX, 214 + bounceY);
+    ctx.fillText('Bướm Bay', centerX, 148 + bounceY);
+    ctx.fillText('Mắt Vui', centerX, 214 + bounceY);
   } else {
-    ctx.fillText('🦋 Bướm Bay Mắt Vui 🦋', centerX, 150 + bounceY);
+    ctx.fillText('Bướm Bay Mắt Vui', centerX, 150 + bounceY);
   }
   ctx.restore();
 
@@ -319,10 +319,10 @@ export function drawLevelEndScreen(ctx, stars, levelIndex, frameCount, session =
     ? { x: CANVAS.WIDTH / 2 - 190, y: cardY + 296 + btnOffsetY, w: 380, h: 62 }
     : { x: cardX + 120, y: cardY + 185 + btnOffsetY, w: 160, h: 46 };
   const replayBtn = viewport.mobile
-    ? { x: CANVAS.WIDTH / 2 - 190, y: cardY + 372 + btnOffsetY, w: 380, h: 52 }
+    ? { x: CANVAS.WIDTH / 2 - 190, y: cardY + 372 + btnOffsetY, w: 182, h: 52 }
     : { x: cardX + 40, y: cardY + 245 + btnOffsetY, w: 140, h: 46 };
   const menuBtn = viewport.mobile
-    ? { x: CANVAS.WIDTH / 2 - 190, y: cardY + 436 + btnOffsetY, w: 380, h: 52 }
+    ? { x: CANVAS.WIDTH / 2 + 8, y: cardY + 372 + btnOffsetY, w: 182, h: 52 }
     : { x: cardX + 220, y: cardY + 245 + btnOffsetY, w: 140, h: 46 };
 
   ctx.fillStyle = '#3498DB';
