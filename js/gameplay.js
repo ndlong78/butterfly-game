@@ -146,26 +146,37 @@ export function drawGameplay(ctx) {
 
   const elapsed = _getElapsedMs();
   const remainMs = Math.max(0, MAX_LEVEL_TIME_MS - elapsed);
+  const portraitLayout = window.innerHeight > window.innerWidth;
 
   ctx.save();
   ctx.fillStyle = 'rgba(255,255,255,0.9)';
-  drawRoundRect(ctx, CANVAS.WIDTH / 2 - 320, 12, 640, 58, 28);
+  const hud = portraitLayout
+    ? { x: CANVAS.WIDTH / 2 - 380, y: 16, w: 760, h: 78, r: 32 }
+    : { x: CANVAS.WIDTH / 2 - 320, y: 12, w: 640, h: 58, r: 28 };
+  drawRoundRect(ctx, hud.x, hud.y, hud.w, hud.h, hud.r);
   ctx.fill();
 
   ctx.fillStyle = '#2C3E50';
   ctx.shadowColor = 'rgba(255,255,255,0.5)';
   ctx.shadowBlur = 4;
-  ctx.font = 'bold 32px Arial';
+  ctx.font = portraitLayout ? 'bold 42px Arial' : 'bold 32px Arial';
 
   const remaining = _butterflies.length - _score;
   ctx.textAlign = 'left';
-  ctx.fillText(`⭐ ${_score}`, CANVAS.WIDTH / 2 - 280, 52);
+  ctx.fillText(`⭐ ${_score}`, hud.x + (portraitLayout ? 44 : 40), hud.y + (portraitLayout ? 52 : 40));
 
   ctx.textAlign = 'center';
-  ctx.fillText(`🦋 ${remaining}`, CANVAS.WIDTH / 2, 52);
+  ctx.fillText(`🦋 ${remaining}`, CANVAS.WIDTH / 2, hud.y + (portraitLayout ? 52 : 40));
 
   ctx.textAlign = 'right';
-  ctx.fillText(`⏱ ${Math.ceil(remainMs / 1000)}s`, CANVAS.WIDTH / 2 + 280, 52);
+  ctx.fillText(`⏱ ${Math.ceil(remainMs / 1000)}s`, hud.x + hud.w - (portraitLayout ? 44 : 40), hud.y + (portraitLayout ? 52 : 40));
+
+  if (portraitLayout) {
+    ctx.font = 'bold 26px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(44,62,80,0.85)';
+    ctx.fillText('Giữ tay lên bướm để bắt nhanh hơn', CANVAS.WIDTH / 2, hud.y + hud.h + 34);
+  }
   ctx.restore();
 
   const ptr = getPointer();
@@ -191,9 +202,9 @@ export function drawGameplay(ctx) {
     const progress = Math.max(0, Math.min(1, hold / GAME.CATCH_DURATION));
     ctx.save();
     ctx.strokeStyle = 'rgba(255,255,100,0.8)';
-    ctx.lineWidth = 4;
+    ctx.lineWidth = portraitLayout ? 6 : 4;
     ctx.beginPath();
-    ctx.arc(ptr.x, ptr.y, 30, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
+    ctx.arc(ptr.x, ptr.y, portraitLayout ? 42 : 30, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
     ctx.stroke();
     ctx.restore();
   }
