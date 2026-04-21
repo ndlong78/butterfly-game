@@ -146,8 +146,116 @@ export function analyzeFrame() {
   return { result, confidence };
 }
 
-export function drawEyeCheckScreen(ctx, status, progressRatio) {
+/**
+ * Vẽ status badge màu động phía trên thanh progress.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {string} status
+ * @param {number} centerX
+ * @param {number} badgeY
+ * @param {boolean} mobile
+ */
+function drawStatusBadge(ctx, status, centerX, badgeY, mobile) {
+  let message = 'Không nhìn rõ mặt con, thử lại nhé!';
+  let bgColor = 'rgba(243, 156, 18, 0.15)';
+  let textColor = '#F39C12';
+  let borderColor = 'rgba(243, 156, 18, 0.4)';
+
+  if (status === 'waiting') {
+    message = VOICE_TEXTS.EYE_CHECK_PROMPT;
+    bgColor = 'rgba(52, 152, 219, 0.12)';
+    textColor = '#2980B9';
+    borderColor = 'rgba(52, 152, 219, 0.35)';
+  } else if (status === 'covered') {
+    message = VOICE_TEXTS.EYE_COVERED_OK;
+    bgColor = 'rgba(39, 174, 96, 0.15)';
+    textColor = '#27AE60';
+    borderColor = 'rgba(39, 174, 96, 0.4)';
+  } else if (status === 'uncovered') {
+    message = VOICE_TEXTS.EYE_NOT_COVERED;
+    bgColor = 'rgba(231, 76, 60, 0.12)';
+    textColor = '#E74C3C';
+    borderColor = 'rgba(231, 76, 60, 0.35)';
+  } else if (status === 'camera_error') {
+    message = 'Camera chưa sẵn sàng, trò chơi sẽ tiếp tục.';
+    bgColor = 'rgba(230, 126, 34, 0.12)';
+    textColor = '#E67E22';
+    borderColor = 'rgba(230, 126, 34, 0.35)';
+  }
+
+  const fontSize = mobile ? 32 : 28;
+  ctx.font = `bold ${fontSize}px Arial`;
+  const textWidth = ctx.measureText(message).width;
+  const padH = mobile ? 20 : 16;
+  const padV = mobile ? 14 : 10;
+  const badgeW = textWidth + padH * 2;
+  const badgeH = fontSize + padV * 2;
+  const badgeX = centerX - badgeW / 2;
+
+  ctx.save();
+  ctx.fillStyle = bgColor;
+  drawRoundRect(ctx, badgeX, badgeY, badgeW, badgeH, 14);
+  ctx.fill();
+
+  ctx.strokeStyle = borderColor;
+  ctx.lineWidth = 1.5;
+  drawRoundRect(ctx, badgeX, badgeW, badgeW, badgeH, 14);
+  ctx.stroke();
+
+  ctx.fillStyle = textColor;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(message, centerX, badgeY + badgeH / 2);
+  ctx.textBaseline = 'alphabetic';
+  ctx.restore();
+}
+
+/**
+ * Vẽ nhãn mắt đang kiểm tra (chỉ hiện trên mobile).
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {'left'|'right'} eyeSide
+ * @param {number} centerX
+ * @param {number} y
+ */
+function drawEyeSideLabel(ctx, eyeSide, centerX, y) {
+  const label = eyeSide === 'left' ? 'Mắt trái' : 'Mắt phải';
+  const cardW = 320;
+  const cardH = 52;
+  const cardX = centerX - cardW / 2;
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(255,255,255,0.88)';
+  drawRoundRect(ctx, cardX, y, cardW, cardH, 12);
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(52, 152, 219, 0.3)';
+  ctx.lineWidth = 1;
+  drawRoundRect(ctx, cardX, y, cardW, cardH, 12);
+  ctx.stroke();
+
+  ctx.fillStyle = '#7F8C8D';
+  ctx.font = '22px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Đang kiểm tra:', centerX - 50, y + cardH / 2);
+
+  ctx.fillStyle = '#1565C0';
+  ctx.font = 'bold 22px Arial';
+  ctx.fillText(label, centerX + 60, y + cardH / 2);
+  ctx.textBaseline = 'alphabetic';
+  ctx.restore();
+}
+
+/**
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {string} status
+ * @param {number} progressRatio
+ * @param {object} [opts]
+ * @param {'left'|'right'} [opts.eyeSide='left'] - mắt đang kiểm tra
+ */
+export function drawEyeCheckScreen(ctx, status, progressRatio, opts = {}) {
+  const { eyeSide = 'left' } = opts;
   const { WIDTH, HEIGHT } = CANVAS;
+  const mobile = window.innerHeight > window.innerWidth || window.innerWidth <= 900;
 
   const bgGradient = ctx.createLinearGradient(0, 0, 0, HEIGHT);
   bgGradient.addColorStop(0, '#DFF6FF');
@@ -155,6 +263,7 @@ export function drawEyeCheckScreen(ctx, status, progressRatio) {
   ctx.fillStyle = bgGradient;
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
+  // Camera preview
   if (_video && _video.readyState >= 2) {
     ctx.drawImage(_video, WIDTH - 190, 20, 160, 120);
   }
@@ -162,14 +271,24 @@ export function drawEyeCheckScreen(ctx, status, progressRatio) {
   ctx.lineWidth = 4;
   ctx.strokeRect(WIDTH - 190, 20, 160, 120);
 
+  // Camera label
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillRect(WIDTH - 190, 130, 160, 20);
+  ctx.fillStyle = 'white';
+  ctx.font = '14px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('Camera', WIDTH - 110, 145);
+
   const baseX = WIDTH / 2 - 100;
   const baseY = HEIGHT / 2 - 80;
 
+  // Face illustration
   ctx.fillStyle = '#FFDAB9';
   ctx.beginPath();
   ctx.arc(baseX + 100, baseY + 80, 70, 0, Math.PI * 2);
   ctx.fill();
 
+  // Open eye (right side of face — always the uncovered one)
   ctx.strokeStyle = '#2C3E50';
   ctx.lineWidth = 4;
   ctx.beginPath();
@@ -184,16 +303,19 @@ export function drawEyeCheckScreen(ctx, status, progressRatio) {
   ctx.lineTo(baseX + 140, baseY + 50);
   ctx.stroke();
 
+  // Eye patch (left eye being covered)
   ctx.fillStyle = '#4A4A4A';
   drawRoundRect(ctx, baseX + 52, baseY + 52, 36, 30, 8);
   ctx.fill();
 
+  // Mouth
   ctx.strokeStyle = '#C0392B';
   ctx.lineWidth = 4;
   ctx.beginPath();
   ctx.arc(baseX + 102, baseY + 110, 22, 0.1, Math.PI - 0.1);
   ctx.stroke();
 
+  // Hand covering eye
   ctx.fillStyle = '#FFDAB9';
   drawRoundRect(ctx, baseX + 28, baseY + 105, 64, 20, 10);
   ctx.fill();
@@ -201,30 +323,13 @@ export function drawEyeCheckScreen(ctx, status, progressRatio) {
   drawRoundRect(ctx, baseX + 20, baseY + 95, 46, 34, 8);
   ctx.fill();
 
-  let message = 'Không nhìn rõ mặt con, thử lại nhé!';
-  let messageColor = '#F39C12';
+  // Status badge — vị trí điều chỉnh theo portrait/landscape
+  const badgeY = HEIGHT / 2 + (mobile ? 140 : 130);
+  drawStatusBadge(ctx, status, WIDTH / 2, badgeY, mobile);
 
-  if (status === 'waiting') {
-    message = VOICE_TEXTS.EYE_CHECK_PROMPT;
-    messageColor = '#3A3A3A';
-  } else if (status === 'covered') {
-    message = VOICE_TEXTS.EYE_COVERED_OK;
-    messageColor = '#27AE60';
-  } else if (status === 'uncovered') {
-    message = VOICE_TEXTS.EYE_NOT_COVERED;
-    messageColor = '#E74C3C';
-  } else if (status === 'camera_error') {
-    message = 'Camera chưa sẵn sàng, trò chơi sẽ tiếp tục.';
-    messageColor = '#E67E22';
-  }
-
-  ctx.fillStyle = messageColor;
-  ctx.textAlign = 'center';
-  ctx.font = 'bold 36px Arial';
-  ctx.fillText(message, WIDTH / 2, HEIGHT / 2 + 170);
-
+  // Progress bar
   const barX = WIDTH / 2 - 200;
-  const barY = HEIGHT - 80;
+  const barY = HEIGHT - (mobile ? 120 : 100);
   const barWidth = 400;
   const barHeight = 20;
   const clampedProgress = Math.max(0, Math.min(progressRatio, 1));
@@ -234,11 +339,19 @@ export function drawEyeCheckScreen(ctx, status, progressRatio) {
   ctx.fill();
 
   ctx.fillStyle = '#2ECC71';
-  drawRoundRect(ctx, barX, barY, barWidth * clampedProgress, barHeight, 10);
-  ctx.fill();
+  if (clampedProgress > 0) {
+    drawRoundRect(ctx, barX, barY, barWidth * clampedProgress, barHeight, 10);
+    ctx.fill();
+  }
 
+  // Nhãn mắt đang kiểm tra — chỉ mobile
+  if (mobile) {
+    drawEyeSideLabel(ctx, eyeSide, WIDTH / 2, barY + 30);
+  }
+
+  // Skip button
   const skipX = WIDTH / 2 - 75;
-  const skipY = HEIGHT - 60;
+  const skipY = HEIGHT - (mobile ? 55 : 52);
   const skipW = 150;
   const skipH = 40;
 
