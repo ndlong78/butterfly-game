@@ -107,6 +107,36 @@ export function updateGameplay(dt) {
   return 'playing';
 }
 
+export function handleGameplayClick(x, y) {
+  let nearest = null;
+  let nearestDist = Infinity;
+
+  for (let i = 0; i < _butterflies.length; i += 1) {
+    if (_startDelay[i] > 0) {
+      continue;
+    }
+
+    const butterfly = _butterflies[i];
+    if (butterfly.caught) {
+      continue;
+    }
+
+    const dist = _distance(x, y, butterfly.pos.x, butterfly.pos.y);
+    if (dist <= GAME.CATCH_RADIUS && dist < nearestDist) {
+      nearest = butterfly;
+      nearestDist = dist;
+    }
+  }
+
+  if (!nearest) {
+    return null;
+  }
+
+  nearest.triggerCaught();
+  _score += 1;
+  return 'caught';
+}
+
 export function drawGameplay(ctx) {
   drawBackground(ctx);
 
