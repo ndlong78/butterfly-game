@@ -33,6 +33,12 @@ function _getTrackPct() {
   return _trackHits / _trackSamples;
 }
 
+/** Bán kính bắt bướm tuỳ thiết bị — ngón tay kém chính xác hơn chuột. */
+function _catchRadius() {
+  const mobile = window.innerHeight > window.innerWidth || window.innerWidth <= 900;
+  return mobile ? GAME.CATCH_RADIUS_MOBILE : GAME.CATCH_RADIUS;
+}
+
 export function initLevel(levelIndex) {
   _level = levelIndex;
   _score = 0;
@@ -54,6 +60,7 @@ export function initLevel(levelIndex) {
 export function updateGameplay(dt) {
   const ptr = getPointer();
   const hold = getHoldDuration();
+  const radius = _catchRadius();
 
   for (let i = 0; i < _butterflies.length; i += 1) {
     if (_startDelay[i] > 0) {
@@ -67,10 +74,16 @@ export function updateGameplay(dt) {
     butterfly.update(dt);
 
     if (!butterfly.caught) {
-      const result = butterfly.checkCatch(ptr.x, ptr.y, hold);
-      if (result === 'caught') {
-        butterfly.triggerCaught();
-        _score += 1;
+      const dx = butterfly.pos.x - ptr.x;
+      const dy = butterfly.pos.y - ptr.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist <= radius) {
+        const progress = hold / GAME.CATCH_DURATION;
+        if (progress >= 1) {
+          butterfly.triggerCaught();
+          _score += 1;
+        }
       }
     }
   }
@@ -78,7 +91,7 @@ export function updateGameplay(dt) {
   _sampleTimer += dt;
   if (_sampleTimer >= TRACK_SAMPLE_MS) {
     _trackSamples += 1;
-    const trackingRadius = GAME.CATCH_RADIUS * 2;
+    const trackingRadius = radius * 2;
 
     for (let i = 0; i < _butterflies.length; i += 1) {
       const butterfly = _butterflies[i];
@@ -108,6 +121,7 @@ export function updateGameplay(dt) {
 }
 
 export function handleGameplayClick(x, y) {
+  const radius = _catchRadius();
   let nearest = null;
   let nearestDist = Infinity;
 
@@ -122,7 +136,7 @@ export function handleGameplayClick(x, y) {
     }
 
     const dist = _distance(x, y, butterfly.pos.x, butterfly.pos.y);
-    if (dist <= GAME.CATCH_RADIUS && dist < nearestDist) {
+    if (dist <= radius && dist < nearestDist) {
       nearest = butterfly;
       nearestDist = dist;
     }
@@ -147,6 +161,7 @@ export function drawGameplay(ctx) {
   const elapsed = _getElapsedMs();
   const remainMs = Math.max(0, MAX_LEVEL_TIME_MS - elapsed);
   const portraitLayout = window.innerHeight > window.innerWidth;
+  const mobile = portraitLayout || window.innerWidth <= 900;
 
   ctx.save();
   ctx.fillStyle = 'rgba(255,255,255,0.9)';
@@ -181,6 +196,11 @@ export function drawGameplay(ctx) {
 
   const ptr = getPointer();
   const hold = getHoldDuration();
+  const radius = _catchRadius();
+
+  // Ring radius lớn hơn trên mobile vì ngón tay che khuất nhiều hơn
+  const ringRadius = mobile ? 48 : 30;
+  const ringStroke = mobile ? 6 : 4;
 
   let nearest = null;
   let nearestDist = Infinity;
@@ -198,13 +218,13 @@ export function drawGameplay(ctx) {
     }
   }
 
-  if (nearest && nearestDist <= GAME.CATCH_RADIUS) {
+  if (nearest && nearestDist <= radius) {
     const progress = Math.max(0, Math.min(1, hold / GAME.CATCH_DURATION));
     ctx.save();
     ctx.strokeStyle = 'rgba(255,255,100,0.8)';
-    ctx.lineWidth = portraitLayout ? 6 : 4;
+    ctx.lineWidth = ringStroke;
     ctx.beginPath();
-    ctx.arc(ptr.x, ptr.y, portraitLayout ? 42 : 30, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
+    ctx.arc(ptr.x, ptr.y, ringRadius, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
     ctx.stroke();
     ctx.restore();
   }
