@@ -43,6 +43,13 @@ let _canvasCssHeight = 0;
 let _eyeAnalyzeTick = 0;
 let _eyeCheckFlowId = 0;
 
+/**
+ * Mắt đang được kiểm tra trong phiên hiện tại.
+ * Hiện game chỉ kiểm tra 1 mắt mỗi phiên — mở rộng sau.
+ * @type {'left'|'right'}
+ */
+let _eyeSide = 'left';
+
 let _childName = '';
 let _childAge = '';
 
@@ -143,6 +150,11 @@ function startEyeCheck() {
   _eyeCheckTimer = 0;
   _eyeAnalyzeTick = 0;
   _eyeCheckStatus = 'waiting';
+
+  // Luân phiên mắt mỗi phiên dựa theo số phiên đã chơi (đơn giản, không state phức tạp)
+  const sessions = JSON.parse(localStorage.getItem('butterflygame_sessions') || '[]');
+  _eyeSide = sessions.length % 2 === 0 ? 'left' : 'right';
+
   transition(States.EYE_CHECK);
 
   startCamera().catch(() => {
@@ -258,8 +270,9 @@ function loop(timestamp) {
 
   switch (getCurrentState()) {
     case States.MENU:
-      drawMenuScreen(ctx, _frameCount);
+      drawMenuScreen(ctx, _frameCount, { hasProfile: Boolean(_childName) });
       break;
+
     case States.EYE_CHECK: {
       _eyeCheckTimer += dt;
       _eyeAnalyzeTick += dt;
@@ -280,9 +293,10 @@ function loop(timestamp) {
       }
 
       const ratio = _eyeCheckTimer / (GAME.EYE_CHECK_SECONDS * 1000);
-      drawEyeCheckScreen(ctx, _eyeCheckStatus, ratio);
+      drawEyeCheckScreen(ctx, _eyeCheckStatus, ratio, { eyeSide: _eyeSide });
       break;
     }
+
     case States.PLAYING: {
       const result = updateGameplay(dt);
       drawGameplay(ctx);
@@ -296,15 +310,18 @@ function loop(timestamp) {
       }
       break;
     }
+
     case States.LEVEL_END: {
       _levelEndFrame += 1;
       const stars = _lastSession ? _lastSession.stars : 1;
-      drawLevelEndScreen(ctx, stars, _currentLevel, _levelEndFrame);
+      drawLevelEndScreen(ctx, stars, _currentLevel, _levelEndFrame, _lastSession);
       break;
     }
+
     case States.REPORT:
       drawReportScreen(ctx, _childName);
       break;
+
     default:
       drawBackground(ctx);
       break;
