@@ -2,7 +2,7 @@ import { States, getCurrentState, transition } from './state.js';
 import { CANVAS, GAME } from './config.js';
 import { initBackground, updateBackground, drawBackground } from './background.js';
 import { initInput, getPointer, getHoldDuration, consumeTap, destroyInput } from './input.js';
-import { initLevel, updateGameplay, drawGameplay, getSessionData } from './gameplay.js';
+import { initLevel, updateGameplay, drawGameplay, getSessionData, handleGameplayClick } from './gameplay.js';
 import {
   startCamera,
   stopCamera,
@@ -208,6 +208,11 @@ function handleTap(x, y) {
       _currentLevel = 0;
       transition(States.MENU);
     }
+    return;
+  }
+
+  if (state === States.PLAYING) {
+    handleGameplayClick(x, y);
     return;
   }
 
