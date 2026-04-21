@@ -20,6 +20,14 @@ Dùng bất kỳ static server nội bộ nào để mở `index.html` qua HTTP.
 npm test
 ```
 
+
+## Chạy browser integration tests (PR #2)
+```bash
+npm install
+npx playwright install chromium
+npm run test:e2e
+```
+
 ## Browser support (khuyến nghị)
 - Chrome/Edge mới nhất
 - Safari iOS 16+ (camera có thể bị giới hạn quyền)
