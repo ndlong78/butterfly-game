@@ -48,16 +48,9 @@ let _childAge = '';
 
 function resizeCanvas() {
   const dpr = window.devicePixelRatio || 1;
-  const fitScale = Math.min(window.innerWidth / CANVAS.WIDTH, window.innerHeight / CANVAS.HEIGHT);
-  const isPortrait = window.innerHeight > window.innerWidth;
-  let scale = fitScale;
-
-  if (isPortrait) {
-    const mobileVisibleWidth = 760;
-    const portraitZoomScale = window.innerWidth / mobileVisibleWidth;
-    const maxScale = window.innerHeight / CANVAS.HEIGHT;
-    scale = Math.max(fitScale, Math.min(portraitZoomScale, maxScale));
-  }
+  const viewportW = window.innerWidth;
+  const viewportH = window.innerHeight;
+  const scale = Math.min(viewportW / CANVAS.WIDTH, viewportH / CANVAS.HEIGHT);
 
   _canvasCssWidth = Math.floor(CANVAS.WIDTH * scale);
   _canvasCssHeight = Math.floor(CANVAS.HEIGHT * scale);
@@ -67,8 +60,8 @@ function resizeCanvas() {
   canvas.style.width = `${_canvasCssWidth}px`;
   canvas.style.height = `${_canvasCssHeight}px`;
   canvas.style.position = 'absolute';
-  canvas.style.left = `${Math.floor((window.innerWidth - _canvasCssWidth) / 2)}px`;
-  canvas.style.top = `${Math.floor((window.innerHeight - _canvasCssHeight) / 2)}px`;
+  canvas.style.left = `${Math.floor((viewportW - _canvasCssWidth) / 2)}px`;
+  canvas.style.top = `${Math.floor((viewportH - _canvasCssHeight) / 2)}px`;
 
   ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
 }
