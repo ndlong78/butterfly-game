@@ -15,6 +15,7 @@ let _startTime = 0;
 let _sampleTimer = 0;
 let _trackSamples = 0;
 let _trackHits = 0;
+let _wasPointerDown = false;
 
 function _distance(x1, y1, x2, y2) {
   const dx = x2 - x1;
@@ -39,6 +40,7 @@ export function initLevel(levelIndex) {
   _trackSamples = 0;
   _trackHits = 0;
   _sampleTimer = 0;
+  _wasPointerDown = false;
   _startTime = performance.now();
 
   const cfg = LEVELS[levelIndex];
@@ -54,6 +56,11 @@ export function initLevel(levelIndex) {
 export function updateGameplay(dt) {
   const ptr = getPointer();
   const hold = getHoldDuration();
+
+  if (ptr.isDown && !_wasPointerDown) {
+    handleGameplayClick(ptr.x, ptr.y);
+  }
+  _wasPointerDown = ptr.isDown;
 
   for (let i = 0; i < _butterflies.length; i += 1) {
     if (_startDelay[i] > 0) {
@@ -105,6 +112,36 @@ export function updateGameplay(dt) {
     return 'complete';
   }
   return 'playing';
+}
+
+export function handleGameplayClick(x, y) {
+  let nearest = null;
+  let nearestDist = Infinity;
+
+  for (let i = 0; i < _butterflies.length; i += 1) {
+    if (_startDelay[i] > 0) {
+      continue;
+    }
+
+    const butterfly = _butterflies[i];
+    if (butterfly.caught) {
+      continue;
+    }
+
+    const dist = _distance(x, y, butterfly.pos.x, butterfly.pos.y);
+    if (dist <= GAME.CATCH_RADIUS && dist < nearestDist) {
+      nearest = butterfly;
+      nearestDist = dist;
+    }
+  }
+
+  if (!nearest) {
+    return null;
+  }
+
+  nearest.triggerCaught();
+  _score += 1;
+  return 'caught';
 }
 
 export function drawGameplay(ctx) {
