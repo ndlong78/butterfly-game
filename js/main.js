@@ -42,7 +42,6 @@ let _canvasCssWidth = 0;
 let _canvasCssHeight = 0;
 let _eyeAnalyzeTick = 0;
 let _eyeCheckFlowId = 0;
-let _isPortraitViewport = false;
 
 let _childName = '';
 let _childAge = '';
@@ -51,13 +50,10 @@ function resizeCanvas() {
   const dpr = window.devicePixelRatio || 1;
   const viewportW = window.innerWidth;
   const viewportH = window.innerHeight;
-  _isPortraitViewport = viewportH > viewportW;
+  const uniformScale = Math.min(viewportW / CANVAS.WIDTH, viewportH / CANVAS.HEIGHT);
 
-  const scaleX = _isPortraitViewport ? viewportW / CANVAS.WIDTH : Math.min(viewportW / CANVAS.WIDTH, viewportH / CANVAS.HEIGHT);
-  const scaleY = _isPortraitViewport ? viewportH / CANVAS.HEIGHT : scaleX;
-
-  _canvasCssWidth = Math.floor(CANVAS.WIDTH * scaleX);
-  _canvasCssHeight = Math.floor(CANVAS.HEIGHT * scaleY);
+  _canvasCssWidth = Math.max(1, Math.floor(CANVAS.WIDTH * uniformScale));
+  _canvasCssHeight = Math.max(1, Math.floor(CANVAS.HEIGHT * uniformScale));
 
   canvas.width = Math.floor(_canvasCssWidth * dpr);
   canvas.height = Math.floor(_canvasCssHeight * dpr);
@@ -67,7 +63,7 @@ function resizeCanvas() {
   canvas.style.left = `${Math.floor((viewportW - _canvasCssWidth) / 2)}px`;
   canvas.style.top = `${Math.floor((viewportH - _canvasCssHeight) / 2)}px`;
 
-  ctx.setTransform(dpr * scaleX, 0, 0, dpr * scaleY, 0, 0);
+  ctx.setTransform(dpr * uniformScale, 0, 0, dpr * uniformScale, 0, 0);
 
   refreshBackgroundLayout();
 }
@@ -324,6 +320,9 @@ function teardown() {
 }
 
 window.addEventListener('resize', resizeCanvas);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', resizeCanvas);
+}
 window.addEventListener('beforeunload', teardown);
 
 loadChildProfile();
