@@ -1,5 +1,6 @@
 import { CANVAS, GAME, VOICE_TEXTS } from './config.js';
 import { drawRoundRect } from './canvas-utils.js';
+import { isMobileLayout } from './viewport.js';
 
 let _video = null;
 let _offscreen = null;
@@ -198,7 +199,7 @@ function drawStatusBadge(ctx, status, centerX, badgeY, mobile) {
 
   ctx.strokeStyle = borderColor;
   ctx.lineWidth = 1.5;
-  drawRoundRect(ctx, badgeX, badgeW, badgeW, badgeH, 14);
+  drawRoundRect(ctx, badgeX, badgeY, badgeW, badgeH, 14);
   ctx.stroke();
 
   ctx.fillStyle = textColor;
@@ -255,7 +256,7 @@ function drawEyeSideLabel(ctx, eyeSide, centerX, y) {
 export function drawEyeCheckScreen(ctx, status, progressRatio, opts = {}) {
   const { eyeSide = 'left' } = opts;
   const { WIDTH, HEIGHT } = CANVAS;
-  const mobile = window.innerHeight > window.innerWidth || window.innerWidth <= 900;
+  const mobile = isMobileLayout();
 
   const bgGradient = ctx.createLinearGradient(0, 0, 0, HEIGHT);
   bgGradient.addColorStop(0, '#DFF6FF');
@@ -288,24 +289,28 @@ export function drawEyeCheckScreen(ctx, status, progressRatio, opts = {}) {
   ctx.arc(baseX + 100, baseY + 80, 70, 0, Math.PI * 2);
   ctx.fill();
 
-  // Open eye (right side of face — always the uncovered one)
+  const checkingLeft = eyeSide === 'left';
+
+  // Open eye (mắt không che)
+  const openEyeX = checkingLeft ? baseX + 130 : baseX + 70;
   ctx.strokeStyle = '#2C3E50';
   ctx.lineWidth = 4;
   ctx.beginPath();
-  ctx.arc(baseX + 130, baseY + 70, 12, Math.PI * 0.1, Math.PI * 0.9);
+  ctx.arc(openEyeX, baseY + 70, 12, Math.PI * 0.1, Math.PI * 0.9);
   ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(baseX + 123, baseY + 58);
-  ctx.lineTo(baseX + 120, baseY + 50);
-  ctx.moveTo(baseX + 130, baseY + 56);
-  ctx.lineTo(baseX + 130, baseY + 47);
-  ctx.moveTo(baseX + 137, baseY + 58);
-  ctx.lineTo(baseX + 140, baseY + 50);
+  ctx.moveTo(openEyeX - 7, baseY + 58);
+  ctx.lineTo(openEyeX - 10, baseY + 50);
+  ctx.moveTo(openEyeX, baseY + 56);
+  ctx.lineTo(openEyeX, baseY + 47);
+  ctx.moveTo(openEyeX + 7, baseY + 58);
+  ctx.lineTo(openEyeX + 10, baseY + 50);
   ctx.stroke();
 
-  // Eye patch (left eye being covered)
+  // Eye patch (mắt đang kiểm tra)
+  const patchX = checkingLeft ? baseX + 52 : baseX + 112;
   ctx.fillStyle = '#4A4A4A';
-  drawRoundRect(ctx, baseX + 52, baseY + 52, 36, 30, 8);
+  drawRoundRect(ctx, patchX, baseY + 52, 36, 30, 8);
   ctx.fill();
 
   // Mouth
@@ -316,11 +321,13 @@ export function drawEyeCheckScreen(ctx, status, progressRatio, opts = {}) {
   ctx.stroke();
 
   // Hand covering eye
+  const handX = checkingLeft ? baseX + 28 : baseX + 108;
+  const sleeveX = checkingLeft ? baseX + 20 : baseX + 100;
   ctx.fillStyle = '#FFDAB9';
-  drawRoundRect(ctx, baseX + 28, baseY + 105, 64, 20, 10);
+  drawRoundRect(ctx, handX, baseY + 105, 64, 20, 10);
   ctx.fill();
   ctx.fillStyle = '#4A4A4A';
-  drawRoundRect(ctx, baseX + 20, baseY + 95, 46, 34, 8);
+  drawRoundRect(ctx, sleeveX, baseY + 95, 46, 34, 8);
   ctx.fill();
 
   // Status badge — vị trí điều chỉnh theo portrait/landscape
@@ -348,6 +355,12 @@ export function drawEyeCheckScreen(ctx, status, progressRatio, opts = {}) {
   if (mobile) {
     drawEyeSideLabel(ctx, eyeSide, WIDTH / 2, barY + 30);
   }
+
+  const remainSeconds = Math.max(0, Math.ceil((1 - clampedProgress) * GAME.EYE_CHECK_SECONDS));
+  ctx.fillStyle = '#5D6D7E';
+  ctx.font = mobile ? '24px Arial' : '20px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText(`Giữ nguyên... ${remainSeconds}s`, WIDTH / 2, barY - 12);
 
   // Skip button
   const skipX = WIDTH / 2 - 75;
