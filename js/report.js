@@ -1,5 +1,6 @@
 import { CANVAS, GAME } from './config.js';
 import { drawRoundRect } from './canvas-utils.js';
+import { isMobileLayout } from './viewport.js';
 
 const STORAGE_KEY = 'butterflygame_sessions';
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -276,7 +277,7 @@ function drawRecentSessionsTable(ctx, sessions, startY, WIDTH) {
  */
 export function drawReportScreen(ctx, childName = '') {
   const { WIDTH, HEIGHT } = CANVAS;
-  const mobile = window.innerHeight > window.innerWidth || window.innerWidth <= 900;
+  const mobile = isMobileLayout();
   const sessions30 = getSessions(30);
 
   const bg = ctx.createLinearGradient(0, 0, 0, HEIGHT);

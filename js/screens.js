@@ -2,14 +2,15 @@ import { CANVAS } from './config.js';
 import { drawBackground } from './background.js';
 import { Butterfly } from './butterfly.js';
 import { drawRoundRect } from './canvas-utils.js';
+import { isMobileLayout, isPortraitLayout } from './viewport.js';
 
 const _menuBtns = {};
 const _levelEndBtns = {};
 const _decorButterflies = [];
 
 function getViewportProfile() {
-  const portrait = window.innerHeight > window.innerWidth;
-  const narrow = window.innerWidth <= 900;
+  const portrait = isPortraitLayout();
+  const narrow = isMobileLayout();
 
   return {
     portrait,

@@ -1,5 +1,6 @@
 import { CANVAS, GAME, VOICE_TEXTS } from './config.js';
 import { drawRoundRect } from './canvas-utils.js';
+import { isMobileLayout } from './viewport.js';
 
 let _video = null;
 let _offscreen = null;
@@ -255,7 +256,7 @@ function drawEyeSideLabel(ctx, eyeSide, centerX, y) {
 export function drawEyeCheckScreen(ctx, status, progressRatio, opts = {}) {
   const { eyeSide = 'left' } = opts;
   const { WIDTH, HEIGHT } = CANVAS;
-  const mobile = window.innerHeight > window.innerWidth || window.innerWidth <= 900;
+  const mobile = isMobileLayout();
 
   const bgGradient = ctx.createLinearGradient(0, 0, 0, HEIGHT);
   bgGradient.addColorStop(0, '#DFF6FF');

@@ -3,6 +3,7 @@ import { Butterfly } from './butterfly.js';
 import { drawBackground } from './background.js';
 import { drawRoundRect } from './canvas-utils.js';
 import { getHoldDuration, getPointer } from './input.js';
+import { isMobileLayout, isPortraitLayout } from './viewport.js';
 
 const MAX_LEVEL_TIME_MS = 60000;
 const TRACK_SAMPLE_MS = 500;
@@ -35,7 +36,7 @@ function _getTrackPct() {
 
 /** Bán kính bắt bướm tuỳ thiết bị — ngón tay kém chính xác hơn chuột. */
 function _catchRadius() {
-  const mobile = window.innerHeight > window.innerWidth || window.innerWidth <= 900;
+  const mobile = isMobileLayout();
   return mobile ? GAME.CATCH_RADIUS_MOBILE : GAME.CATCH_RADIUS;
 }
 
@@ -160,8 +161,8 @@ export function drawGameplay(ctx) {
 
   const elapsed = _getElapsedMs();
   const remainMs = Math.max(0, MAX_LEVEL_TIME_MS - elapsed);
-  const portraitLayout = window.innerHeight > window.innerWidth;
-  const mobile = portraitLayout || window.innerWidth <= 900;
+  const portraitLayout = isPortraitLayout();
+  const mobile = isMobileLayout();
 
   ctx.save();
   ctx.fillStyle = 'rgba(255,255,255,0.9)';
