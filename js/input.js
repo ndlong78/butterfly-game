@@ -1,10 +1,8 @@
-import { CANVAS } from './config.js';
-
 const DRIFT_THRESHOLD = 10;
 
 const _state = {
-  x: CANVAS.WIDTH / 2,
-  y: CANVAS.HEIGHT / 2,
+  x: 0,
+  y: 0,
   isDown: false,
   downSince: null,
   downOriginX: 0,
@@ -12,7 +10,7 @@ const _state = {
 };
 
 const _logical = { x: 0, y: 0 };
-const _pointerView = { x: _state.x, y: _state.y, isDown: _state.isDown };
+const _pointerView = { x: 0, y: 0, isDown: false };
 const _tapView = { x: 0, y: 0 };
 
 let _canvas = null;
@@ -27,20 +25,13 @@ function _distance(x1, y1, x2, y2) {
 
 function _toLogical(e) {
   const rect = _canvas.getBoundingClientRect();
-  const scaleX = CANVAS.WIDTH / rect.width;
-  const scaleY = CANVAS.HEIGHT / rect.height;
-
   let point = null;
-  if (e.touches && e.touches.length > 0) {
-    point = e.touches[0];
-  } else if (e.changedTouches && e.changedTouches.length > 0) {
-    point = e.changedTouches[0];
-  } else {
-    point = e;
-  }
+  if (e.touches && e.touches.length > 0) point = e.touches[0];
+  else if (e.changedTouches && e.changedTouches.length > 0) point = e.changedTouches[0];
+  else point = e;
 
-  _logical.x = (point.clientX - rect.left) * scaleX;
-  _logical.y = (point.clientY - rect.top) * scaleY;
+  _logical.x = point.clientX - rect.left;
+  _logical.y = point.clientY - rect.top;
   return _logical;
 }
 
@@ -86,22 +77,20 @@ function addEventListenerWithCleanup(target, event, handler, options) {
 
 export function initInput(canvas) {
   destroyInput();
-
   _canvas = canvas;
 
   const handler = (e) => {
     e.preventDefault();
     _updateFromEvent(e);
   };
-
   const releaseHandler = (e) => {
+    if (!_canvas) return;
     _updateFromEvent(e);
   };
 
   addEventListenerWithCleanup(canvas, 'mousemove', handler);
   addEventListenerWithCleanup(canvas, 'mousedown', handler);
   addEventListenerWithCleanup(canvas, 'mouseup', handler);
-
   addEventListenerWithCleanup(canvas, 'touchstart', handler, { passive: false });
   addEventListenerWithCleanup(canvas, 'touchmove', handler, { passive: false });
   addEventListenerWithCleanup(canvas, 'touchend', handler, { passive: false });
@@ -113,9 +102,7 @@ export function initInput(canvas) {
 }
 
 export function destroyInput() {
-  for (let i = 0; i < _listeners.length; i += 1) {
-    _listeners[i]();
-  }
+  for (let i = 0; i < _listeners.length; i += 1) _listeners[i]();
   _listeners = [];
   _canvas = null;
   _tapQueued = false;
@@ -129,17 +116,12 @@ export function getPointer() {
 }
 
 export function getHoldDuration() {
-  if (!_state.isDown || _state.downSince === null) {
-    return 0;
-  }
+  if (!_state.isDown || _state.downSince === null) return 0;
   return Date.now() - _state.downSince;
 }
 
 export function consumeTap() {
-  if (!_tapQueued) {
-    return null;
-  }
-
+  if (!_tapQueued) return null;
   _tapQueued = false;
   return _tapView;
 }

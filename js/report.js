@@ -275,9 +275,10 @@ function drawRecentSessionsTable(ctx, sessions, startY, WIDTH) {
  * @param {CanvasRenderingContext2D} ctx
  * @param {string} childName
  */
-export function drawReportScreen(ctx, childName = '') {
-  const { WIDTH, HEIGHT } = CANVAS;
-  const mobile = isMobileLayout();
+export function drawReportScreen(ctx, childName = '', layout = null) {
+  const WIDTH = layout ? layout.w : CANVAS.WIDTH;
+  const HEIGHT = layout ? layout.h : CANVAS.HEIGHT;
+  const mobile = layout ? layout.isPhone : isMobileLayout();
   const sessions30 = getSessions(30);
 
   const bg = ctx.createLinearGradient(0, 0, 0, HEIGHT);

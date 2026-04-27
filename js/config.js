@@ -1,6 +1,8 @@
 export const CANVAS = {
-  WIDTH: 1280,
-  HEIGHT: 720,
+  WIDTH: window.innerWidth || 1280,
+  HEIGHT: window.innerHeight || 720,
+  DESIGN_WIDTH: 1280,
+  DESIGN_HEIGHT: 720,
   TARGET_FPS: 60,
 };
 
@@ -14,26 +16,10 @@ export const GAME = {
 };
 
 export const LEVELS = [
-  {
-    butterflies: 1,
-    speedMultiplier: 1.5,
-    segmentMs: 4000,
-  },
-  {
-    butterflies: 2,
-    speedMultiplier: 2.2,
-    segmentMs: 3500,
-  },
-  {
-    butterflies: 3,
-    speedMultiplier: 3.0,
-    segmentMs: 3000,
-  },
-  {
-    butterflies: 5,
-    speedMultiplier: 3.8,
-    segmentMs: 2500,
-  },
+  { butterflies: 1, speedMultiplier: 1.5, segmentMs: 4000 },
+  { butterflies: 2, speedMultiplier: 2.2, segmentMs: 3500 },
+  { butterflies: 3, speedMultiplier: 3.0, segmentMs: 3000 },
+  { butterflies: 5, speedMultiplier: 3.8, segmentMs: 2500 },
 ];
 
 export const COLORS = {
