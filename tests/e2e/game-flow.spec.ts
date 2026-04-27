@@ -32,14 +32,6 @@ test.beforeEach(async ({ page }) => {
 
   page.on('dialog', (dialog) => {
     const msg = dialog.message();
-    if (msg.includes('Nhập tên bé')) {
-      void dialog.accept('Bé Na').catch(() => {});
-      return;
-    }
-    if (msg.includes('Nhập tuổi bé')) {
-      void dialog.accept('6').catch(() => {});
-      return;
-    }
     if (msg.includes('Thiết lập mã phụ huynh')) {
       void dialog.accept('5678').catch(() => {});
       return;
@@ -52,7 +44,7 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test('flow start game lưu profile và fallback camera an toàn', async ({ page }) => {
+test('flow start game dùng profile mặc định và fallback camera an toàn', async ({ page }) => {
   await page.goto('/');
   await page.setViewportSize({ width: 1280, height: 720 });
 
@@ -61,14 +53,12 @@ test('flow start game lưu profile và fallback camera an toàn', async ({ page 
   await expect
     .poll(async () =>
       page.evaluate(() => ({
-        childName: localStorage.getItem('butterflygame_child_name'),
-        childAge: localStorage.getItem('butterflygame_child_age'),
+        profile: localStorage.getItem('butterflygame_profile_v2'),
         eye: window.__eyeCheckResult,
       }))
     )
     .toEqual({
-      childName: 'Bé Na',
-      childAge: '6',
+      profile: JSON.stringify({ name: 'Bé 4-7 tuổi', age: '5' }),
       eye: 'permission_denied',
     });
 });
