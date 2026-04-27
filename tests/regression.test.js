@@ -119,3 +119,27 @@ test('main.js có logic luân phiên mắt _eyeSide dựa trên số phiên', ()
     'thiếu logic luân phiên mắt trái/phải',
   );
 });
+
+test('main.js chuẩn hóa điều hướng bằng showScreen', () => {
+  const main = read('js/main.js');
+  assert.ok(main.includes('function showScreen(name)'), 'thiếu hàm showScreen(name)');
+  assert.ok(main.includes('showScreen(States.MENU)'), 'không dùng showScreen cho MENU');
+  assert.ok(main.includes('showScreen(States.PLAYING)'), 'không dùng showScreen cho PLAYING');
+});
+
+test('manifest.webmanifest có cấu hình PWA iPhone/iPad chuẩn', () => {
+  const manifest = read('manifest.webmanifest');
+  assert.ok(manifest.includes('\"name\": \"Bướm Bay Mắt Vui\"'), 'thiếu name');
+  assert.ok(manifest.includes('\"short_name\": \"Bướm Bay\"'), 'thiếu short_name');
+  assert.ok(manifest.includes('\"display\": \"standalone\"'), 'thiếu display standalone');
+  assert.ok(manifest.includes('\"orientation\": \"landscape\"'), 'thiếu orientation landscape');
+  assert.ok(manifest.includes('\"start_url\": \"./index.html\"'), 'thiếu start_url tương thích Pages');
+  assert.ok(manifest.includes('\"scope\": \"./\"'), 'thiếu scope tương thích Pages');
+});
+
+test('service worker có cache version rõ ràng', () => {
+  const sw = read('sw.js');
+  assert.ok(sw.includes('CACHE_VERSION'), 'thiếu CACHE_VERSION');
+  assert.ok(sw.includes('self.addEventListener(\'install\''), 'thiếu install handler');
+  assert.ok(sw.includes('self.addEventListener(\'fetch\''), 'thiếu fetch handler');
+});

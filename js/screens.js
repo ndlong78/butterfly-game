@@ -187,10 +187,24 @@ export function drawMenuScreen(ctx, frameCount, opts = {}) {
   ctx.fillStyle = '#FFFFFF';
   ctx.font = viewport.mobile ? 'bold 40px Arial' : 'bold 24px Arial';
   ctx.fillText('Xem Báo Cáo', reportX + reportW / 2, reportY + reportH / 2);
+
+  const resetW = viewport.mobile ? 360 : 220;
+  const resetH = viewport.mobile ? 56 : 44;
+  const resetX = centerX - resetW / 2;
+  const resetY = reportY + reportH + (viewport.mobile ? 16 : 12);
+
+  ctx.fillStyle = '#E67E22';
+  drawRoundRect(ctx, resetX, resetY, resetW, resetH, 16);
+  ctx.fill();
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = viewport.mobile ? 'bold 30px Arial' : 'bold 20px Arial';
+  ctx.fillText('Reset Cache', resetX + resetW / 2, resetY + resetH / 2);
   ctx.textBaseline = 'alphabetic';
 
   _menuBtns.start = { x: startX, y: startY, w: startW, h: startH };
   _menuBtns.report = { x: reportX, y: reportY, w: reportW, h: reportH };
+  _menuBtns.resetCache = { x: resetX, y: resetY, w: resetW, h: resetH };
 
   if (viewport.mobile) {
     drawProfileHint(ctx, hasProfile);
@@ -362,6 +376,10 @@ export function handleMenuClick(x, y) {
 
   if (hit(_menuBtns.report, x, y)) {
     return 'report';
+  }
+
+  if (hit(_menuBtns.resetCache, x, y)) {
+    return 'reset_cache';
   }
 
   return null;

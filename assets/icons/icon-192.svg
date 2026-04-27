@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="Bướm Bay icon 192">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8dd8ff"/>
+      <stop offset="100%" stop-color="#59a9ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="36" fill="url(#bg)"/>
+  <ellipse cx="66" cy="96" rx="38" ry="48" fill="#ffd79f"/>
+  <ellipse cx="126" cy="96" rx="38" ry="48" fill="#ffd79f"/>
+  <rect x="90" y="58" width="12" height="76" rx="6" fill="#3b3f60"/>
+  <circle cx="96" cy="52" r="8" fill="#3b3f60"/>
+</svg>

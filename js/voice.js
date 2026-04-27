@@ -2,6 +2,8 @@ import { VOICE_TEXTS } from './config.js';
 
 let _selectedVoice = null;
 let _onVoicesChanged = null;
+let _audioContext = null;
+let _audioUnlocked = false;
 
 function pickVoice(voices) {
   if (!voices || voices.length === 0) {
@@ -42,6 +44,35 @@ export function destroyVoice() {
     window.speechSynthesis.onvoiceschanged = null;
   }
   _onVoicesChanged = null;
+
+  if (_audioContext && _audioContext.state !== 'closed') {
+    _audioContext.close();
+  }
+  _audioContext = null;
+  _audioUnlocked = false;
+}
+
+export async function unlockAudio() {
+  if (_audioUnlocked) {
+    return true;
+  }
+
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) {
+    _audioUnlocked = true;
+    return true;
+  }
+
+  if (!_audioContext) {
+    _audioContext = new Ctx();
+  }
+
+  if (_audioContext.state === 'suspended') {
+    await _audioContext.resume();
+  }
+
+  _audioUnlocked = _audioContext.state === 'running';
+  return _audioUnlocked;
 }
 
 export function speak(textKey) {
@@ -54,6 +85,10 @@ export function speak(textKey) {
 }
 
 export function speakRaw(text) {
+  if (!_audioUnlocked) {
+    return Promise.resolve();
+  }
+
   window.speechSynthesis.cancel();
 
   const utt = new SpeechSynthesisUtterance(text);
